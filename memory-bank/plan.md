@@ -1,6 +1,6 @@
-# Xonix Clone Prototype Dev Plan
+# Xonix 3D Evolution Dev Plan
 
-This plan tracks the development milestones for the Xonix clone.
+This plan tracks the development milestones for our Xonix 3D Evolution game.
 
 ## Core Gameplay (MVP)
 
@@ -12,56 +12,63 @@ This plan tracks the development milestones for the Xonix clone.
   - [ ] Initialize `gameStore.ts` (Zustand)
   - [ ] Define initial `Types.ts`
   - [ ] **Playground/Testing**: Run initial setup with empty canvas to verify rendering pipeline
-- [ ] **Step 2: 2D Gameplay (Levels 1-2)**
-  - [ ] Implement `Player.tsx` movement
-  - [ ] Create `useControls.ts` (keyboard/swipe)
-  - [ ] Implement `GridMath.ts` (area capture)
-  - [ ] Add enemies (`Environment.tsx`, `EnemyAI.ts`)
-  - [ ] Setup `PhysicsSystem.ts` (Cannon.js collisions)
-  - [ ] Develop `HUD.tsx` (score, lives, level)
-  - [ ] Apply CGA pixel shader (`cgaShader.glsl`)
-  - [ ] Integrate state updates (`gameStore.ts`)
-  - [ ] Define core types (`Player`, `Enemy`, `Grid`)
-  - [ ] **Playground/Testing**: Test 2D gameplay with player movement, area capturing, and enemy collision
+- [ ] **Step 2: Classic 2D Xonix (Levels 1-2)**
+  - [ ] Implement 2D rectangular grid system in `GridMath.ts`
+  - [ ] Create player "cutter" in `Player.tsx` with 4-directional movement
+  - [ ] Implement trail drawing when moving through unsafe zones
+  - [ ] Create area capture algorithm (flood fill) upon returning to safe zones
+  - [ ] Add bouncers (reflect off walls) and patrollers (move along borders) in `Environment.tsx`
+  - [ ] Setup collision detection in `PhysicsSystem.ts` (player-enemy, player-trail)
+  - [ ] Create HUD showing lives, score, and capture percentage
+  - [ ] Apply CGA pixel shader for retro aesthetic
+  - [ ] Implement level completion logic (80% area capture)
+  - [ ] **Playground/Testing**: Test classic Xonix gameplay with area capture and enemies
 - [ ] **Step 3: 3D Transition (Level 3)**
-  - [ ] Add transition trigger (e.g., orb) in `Environment.tsx`
-  - [ ] Create `AnimationSystem.ts` (2D->3D grid)
-  - [ ] Update `PhysicsSystem.ts` for 3D
-  - [ ] Implement `useFollowCamera.ts` (basic follow)
+  - [ ] Add special transition triggers (glowing orbs) to level
+  - [ ] Create `AnimationSystem.ts` for 2D→3D grid rotation animation
+  - [ ] Update physics system for 3D space
+  - [ ] Implement camera follow behavior in `useFollowCamera.ts`
+  - [ ] Update grid system for 2.5D/3D representation
   - [ ] Add `is3DMode` state to `gameStore.ts`
-  - [ ] **Playground/Testing**: Test transition from 2D to 3D gameplay via the orb trigger
-- [ ] **Step 4: 3D Shape Filling (Level 4)**
-  - [ ] Extend `GridMath.ts` for 3D shape detection (cubes)
-  - [ ] Add shape scoring logic (`gameStore.ts`)
-  - [ ] Visualize completed shapes (`SceneCanvas.tsx`)
-  - [ ] Manage plane/shape state (`Environment.tsx`)
-  - [ ] **Playground/Testing**: Test 3D shape filling mechanics and score calculation
+  - [ ] **Playground/Testing**: Test transition from 2D to 3D via orb collection
+- [ ] **Step 4: 3D Gameplay (Level 4)**
+  - [ ] Extend `GridMath.ts` for multi-plane filling (XY, XZ, YZ planes)
+  - [ ] Implement 3D volume detection (cubes, prisms)
+  - [ ] Add scoring bonuses for 3D shape completion
+  - [ ] Update enemy movement patterns for 3D navigation
+  - [ ] Improve 3D shape visualization
+  - [ ] **Playground/Testing**: Test 3D plane filling and volume creation mechanics
 
-## Enhancements & Polish (Post-MVP)
+## Enhancements & Polish
 
 - [ ] **Step 5: Advanced Controls**
-  - [ ] Enhance `useFollowCamera.ts` (view switch, zoom)
-  - [ ] Add camera controls to `HUD.tsx`
-  - [ ] Refine `useControls.ts` (pinch-zoom, multi-touch)
-  - [ ] **Playground/Testing**: Test camera perspective switching and mobile controls on actual devices
-- [ ] **Step 6: Levels & Visual Evolution (Levels 5-10)**
-  - [ ] Define level configurations (5-10) in `Environment.tsx`
-  - [ ] Implement visual styles: EGA/VGA, Neon, Forest, Sea, Abstract
-  - [ ] Add Effects (Bloom, Particles via Drei)
-  - [ ] Create Shaders (`waterShader.glsl`, etc.)
-  - [ ] Implement Power-ups (Speed, Shield)
-  - [ ] Setup `AssetLoader.ts` (textures, audio)
-  - [ ] Integrate thematic audio playback
-  - [ ] **Playground/Testing**: Playtest all levels with their unique visuals, effects, and mechanics
+  - [ ] Implement switchable camera perspectives (top-down, side, first-person)
+  - [ ] Add camera control UI in `HUD.tsx`
+  - [ ] Support mouse/touch zoom functionality
+  - [ ] Add multi-touch controls for mobile devices
+  - [ ] Refine movement controls for 3D navigation
+  - [ ] **Playground/Testing**: Test camera controls on desktop and mobile devices
+- [ ] **Step 6: Level & Visual Evolution (Levels 5-10)**
+  - [ ] Design progressive level configurations with increasing difficulty
+  - [ ] Create themed visuals for level groups:
+    - [ ] EGA/VGA aesthetic (levels 5-6)
+    - [ ] Futuristic/Neon theme (level 7)
+    - [ ] Fairy Forest with particles (level 8)
+    - [ ] Ocean theme with water shader (level 9)
+    - [ ] Modern abstract with PBR materials (level 10)
+  - [ ] Implement power-ups (speed boost, shield, etc.)
+  - [ ] Setup asset loading system for textures and audio
+  - [ ] Add themed music and sound effects
+  - [ ] **Playground/Testing**: Playtest themed levels and verify increasing challenge
 - [ ] **Step 7: Optimization & Deployment**
-  - [ ] Optimize rendering performance (`SceneCanvas.tsx`)
-  - [ ] Optimize physics (`PhysicsSystem.ts`)
-  - [ ] Verify mobile performance
-  - [ ] Configure `vite.config.ts` for production
-  - [ ] Review/minify assets
-  - [ ] (Optional) Create deployment script
-  - [ ] **Playground/Testing**: Full playthrough performance testing on target devices
+  - [ ] Optimize rendering (instancing, draw call reduction)
+  - [ ] Tune physics for performance
+  - [ ] Test on various devices and optimize for mobile
+  - [ ] Polish UI elements and transitions
+  - [ ] Add save/load functionality
+  - [ ] Package for deployment
+  - [ ] **Playground/Testing**: Full game performance testing
 
 ## Timeline
 
-- (Placeholder: Define target dates if needed)
+- (Define target dates based on development capacity)

@@ -1,64 +1,79 @@
-# Product Definition Rules: Xonix Clone Prototype
+# Product Definition Rules: Xonix 3D Evolution
 
 ## Product Vision
-Develop a modernized Xonix clone prototype with 10 levels, evolving from a retro 2D game to a sophisticated 3D experience. The game starts with classic Xonix mechanics in a pixelated CGA style, introduces power-ups and special zones to trigger 3D transitions, and progresses to modern visuals and thematic vibes. Built for desktop and mobile web, the prototype showcases vibe coding with minimal manual intervention using Cursor IDE.
+Develop a modernized Xonix game that evolves from the classic 2D mechanics to an innovative 3D experience across 10 levels. The game stays true to the original 1984 gameplay in early levels (2D grid, area capture mechanics, enemy avoidance), while introducing special zones that trigger transitions to 3D gameplay. Built for desktop and mobile web browsers using React, Three.js, and TypeScript.
 
 ## Target Audience
-- Developers and stakeholders evaluating AI-assisted game development.
-- Players interested in retro-to-modern game evolution.
+- Fans of classic arcade games seeking a nostalgic yet fresh experience
+- Modern gamers interested in innovative gameplay evolution
+- Developers evaluating AI-assisted game development
 
 ## Platform
-- Web (desktop and mobile browsers).
-- Optimized for Chrome, Firefox, Safari (desktop), and mobile equivalents.
+- Web (desktop and mobile browsers)
+- Optimized for Chrome, Firefox, Safari
 
 ## Core Features
-- **Classic Xonix Mechanics**:
-  - Player controls a ball on a grid, drawing lines to capture safe areas.
-  - Avoid bouncing enemies; lose lives on collision with enemies or unsafe lines.
-  - Score based on captured area percentage.
+- **Classic Xonix Mechanics (Faithful to Original)**:
+  - Player controls a "cutter" that moves on a rectangular grid
+  - Drawing lines through uncaptured areas, returning to safe zones to capture territory
+  - Two types of enemies: Bouncers (reflect off walls within the uncaptured area) and Patrollers (move along borders)
+  - Objective: Capture required percentage (typically 80%) of the playfield while avoiding enemies
+  - Lives lost on collision with enemies or the cutter's own trail
+
 - **Level Progression (10 Levels)**:
-  - Levels 1-2: 2D gameplay, CGA pixelated style (80s vibe), simple grids, 2-3 enemies.
-  - Levels 3+: Introduce power-ups (e.g., speed boost, shield) and special zones (e.g., glowing orbs or marked areas) to trigger 3D transitions.
-  - Levels 4-10: Increasing complexity (more enemies, larger grids, thematic vibes).
-- **3D Transition**:
-  - Triggered by collecting items (glowing orbs) or filling special zones.
-  - 2D grid rotates to a "floor" plane, with Z-axis rising to form a 3D space.
-  - Players fill 2D planes (XY, XZ, YZ) and combine them into 3D shapes (e.g., cubes, prisms) for bonus points.
+  - Levels 1-2: Classic 2D gameplay with CGA-style visuals
+  - Level 3: Introduction of transition elements (glowing orbs that trigger 2D→3D)
+  - Levels 4-10: Progressive 3D gameplay with increasing complexity
+
+- **3D Transition Mechanics**:
+  - 2D grid rotates to become floor plane, with Z-axis emerging
+  - Players fill planes in 3D space (XY, XZ, YZ)
+  - Ability to form 3D volumes (cubes, prisms) for bonus points
+
 - **Camera Controls**:
-  - Default: Third-person camera follows the ball.
-  - Switchable views: Top-down, side-angle, first-person.
-  - Adjustable distance: Mouse scroll (desktop), pinch-to-zoom (mobile).
-- **Visual Progression**:
-  - Levels 1-2: CGA pixelated (4-color palette, blocky sprites).
-  - Levels 3-5: Low-poly, retro EGA/VGA-inspired.
-  - Levels 6-8: Mid-poly, early 2000s aesthetics (smooth textures, phong lighting).
-  - Levels 9-10: High-poly, modern PBR materials, bloom effects.
-- **Thematic Vibes**:
-  - Level 7: Futuristic (neon, cyberpunk).
-  - Level 8: Fairy forest (lush greens, glowing particles).
-  - Level 9: Sea-inspired (blue hues, water effects).
-  - Level 10: Modern abstract (minimalist, vibrant).
-- **Mobile Features**:
-  - Touch controls: Swipe to steer ball.
-  - Multi-touch: Two-finger tap for shield power-up.
+  - Default: Third-person following the cutter
+  - Switchable views: Top-down (classic), side-angle, first-person
+  - Adjustable zoom: Mouse scroll (desktop), pinch (mobile)
+
+- **Visual Evolution**:
+  - Levels 1-2: CGA pixelated (4-color palette)
+  - Levels 3-5: EGA/VGA-inspired low-poly
+  - Levels 6-8: Early 2000s style (smooth textures, basic lighting)
+  - Levels 9-10: Modern with PBR materials, bloom effects
+
+- **Thematic Progression**:
+  - Level 7: Futuristic/Neon (cyberpunk elements)
+  - Level 8: Fairy Forest (organic elements)
+  - Level 9: Ocean/Water themed
+  - Level 10: Modern abstract minimalist
+
+- **Player Controls**:
+  - Desktop: Arrow keys/WASD for movement (4 directions)
+  - Mobile: Touch/swipe controls, multi-touch for special actions
+  - Camera controls: Mouse (desktop), pinch/rotate gestures (mobile)
+
+- **Scoring System**:
+  - Points based on area percentage captured
+  - Time bonuses for quick level completion
+  - Multipliers for capturing areas containing bonus items
+  - 3D shape completion bonuses
+
 - **Audio**:
-  - Levels 1-2: 8-bit chiptune (80s retro).
-  - Levels 3-6: Synthwave (retro-futuristic).
-  - Levels 7-10: Thematic (cyberpunk, ambient forest, oceanic, modern electronic).
+  - 8-bit chiptunes for early levels
+  - Evolving to synthwave and modern music for later levels
+  - Sound effects that enhance from basic to sophisticated
 
 ## Non-Functional Requirements
-- **Performance**: 60 FPS on modern devices (desktop: mid-range GPU; mobile: mid-range smartphone).
-- **Compatibility**: Responsive design for desktop (1920x1080, 1366x768) and mobile (iPhone, Android).
-- **Build Size**: Optimized for web (<50MB, including assets).
-- **Extensibility**: Modular code to add levels, power-ups, and vibes.
+- Performance: 60 FPS on modern devices
+- Responsive design for various screen sizes
+- Build size under 50MB (including assets)
+- Modular code structure for extensibility
 
 ## Constraints
-- **Timeline**: 2-day sprint for a 10-level prototype.
-- **Team**: Two senior developers (one mathematician, one product manager/graphic designer).
-- **Coding Approach**: Vibe coding with Cursor IDE, minimizing manual coding.
-- **Tech Stack**: React, TypeScript, Three.js, Cannon.js, Vite, shadcn/ui, Tailwind CSS, Zustand.
+- Development approach: Vibe coding with Cursor IDE
+- Tech stack: React, TypeScript, Three.js (via react-three-fiber), Cannon.js, Tailwind CSS
 
 ## Deliverables
-- 10-level prototype hosted on a static web server (e.g., Netlify).
-- Source code in a Git repository.
-- Demo showcasing 2D-to-3D progression and vibe evolution.
+- 10-level prototype hosted on static web server
+- Source code in Git repository
+- Demo showcasing 2D-to-3D progression
