@@ -1,14 +1,34 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Setting up Three.js Game Boilerplate</title>
-    <script type="module" crossorigin src="/assets/index-BntNKvcn.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-CkF4cfJs.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classic Xonix 2D</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <h1>Classic Xonix 2D</h1>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui">
+            <div>Level: <span id="level">1</span></div>
+            <div>Score: <span id="score">0</span></div>
+            <div>Lives: <span id="lives">3</span></div>
+            <div>Captured: <span id="captured">0</span>% / <span id="target-percentage">75</span>%</div>
+        </div>
+        <!-- Add button for next level -->
+        <button id="nextLevelButton" class="next-level-button" style="display: none;">Start Next Level</button>
+    </div>
+<!-- Load scripts as modules -->
+<!-- gameLogic.js needs to be loaded first if game.js depends on it immediately -->
+<!-- Since game.js wraps its logic in DOMContentLoaded, order might not strictly matter,
+         but it's clearer to load logic first. -->
+    <script type="module" src="constants.js"></script>
+    <script type="module" src="gameLogic.js"></script>
+    <script type="module" src="enemyLogic.js"></script>
+    <script type="module" src="game.js"></script>
+</body>
+
 </html>
