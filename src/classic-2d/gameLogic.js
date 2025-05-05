@@ -347,6 +347,25 @@ function updateGame() {
     const nextY = player.y + player.dy;
 
     if (nextX >= 0 && nextX < GRID_COLS && nextY >= 0 && nextY < GRID_ROWS) {
+      // --- Player -> Enemy Collision Check ---
+      const enemyCollision = enemies.some((e) => e.x === nextX && e.y === nextY);
+      if (enemyCollision) {
+        if (isDrawing) {
+          console.log(`Player moved into enemy at (${nextX}, ${nextY}) while drawing!`);
+          loseLife();
+          return; // Stop update if life lost
+        } else {
+          // Player is safe if they move onto an enemy while on captured ground
+          // Stop player movement for this turn, but don't lose life
+          console.log(`Player bumped into enemy at (${nextX}, ${nextY}) while safe.`);
+          // Don't update player position, effectively stopping them
+          // We might want to reset dx/dy here if input isn't keydown-based
+          // For now, just preventing the move is sufficient.
+          return; // Stop further player move processing this tick
+        }
+      }
+      // --- End Player -> Enemy Collision Check ---
+
       const nextCellState = getCellState(nextX, nextY);
 
       if (nextCellState === CellState.CAPTURED) {

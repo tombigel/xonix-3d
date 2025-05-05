@@ -375,6 +375,24 @@ export function updateAllEnemies(config) {
   let lifeLost = false;
 
   for (const enemy of enemies) {
+    // --- Collision Check FIRST ---
+    // Check collision with player's position *before* the enemy moves for this frame
+    if (player && enemy.x === player.x && enemy.y === player.y) {
+      if (enemy.type === 'patroller') {
+        // Patroller kills regardless of player drawing state
+        console.log(`Patroller started turn on player at (${player.x}, ${player.y})!`);
+        lifeLost = true;
+        break; // Stop processing other enemies
+      } else if (enemy.type === 'bouncer' && isDrawing) {
+        // Bouncer only kills if player is drawing
+        console.log(`Bouncer started turn on player at (${player.x}, ${player.y}) while drawing!`);
+        lifeLost = true;
+        break; // Stop processing other enemies
+      }
+      // If it's a bouncer and player is not drawing, no life lost from this check.
+    }
+    // --- End Collision Check ---
+
     let enemyCausedLifeLoss = false;
     if (enemy.type === 'bouncer') {
       enemyCausedLifeLoss = updateBouncer(enemy, grid, gridCols, gridRows, isDrawing, currentTrail);
@@ -389,22 +407,13 @@ export function updateAllEnemies(config) {
       );
     }
 
+    // Check if the enemy's *move* resulted in hitting the trail
     if (enemyCausedLifeLoss) {
       lifeLost = true;
       break; // Stop processing other enemies if one caused life loss
     }
-
-    // Check collision with player's current position AFTER enemy potentially moved
-    if (player && enemy.x === player.x && enemy.y === player.y) {
-      if (isDrawing) {
-        console.log(`${enemy.type} hit player during drawing!`);
-        lifeLost = true;
-        break; // Stop processing other enemies
-      }
-    }
   }
 
   // Return the result
-  // Note: enemies array is modified in-place within updateBouncer/updatePatroller
   return { lifeLost };
 }
