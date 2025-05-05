@@ -139,11 +139,11 @@ document.addEventListener('DOMContentLoaded', () => {
       let enemyX, enemyY;
       let attempts = 0;
       do {
+        // Spawn bouncers within the inner playable area (excluding 2-cell border)
         enemyX = Math.floor(Math.random() * (GRID_COLS - 4)) + 2;
         enemyY = Math.floor(Math.random() * (GRID_ROWS - 4)) + 2;
         attempts++;
         if (attempts > 100) {
-          // Prevent infinite loop if grid is full
           console.warn('Could not place bouncer easily, placing randomly.');
           break;
         }
@@ -153,12 +153,26 @@ document.addEventListener('DOMContentLoaded', () => {
         (enemyX === player.x && enemyY === player.y)
       );
 
-      const angle = Math.random() * Math.PI * 2;
-      let dx = Math.round(Math.cos(angle) * currentEnemySpeed);
-      let dy = Math.round(Math.sin(angle) * currentEnemySpeed);
-      if (dx === 0 && dy === 0) {
-        dx = Math.random() > 0.5 ? currentEnemySpeed : -currentEnemySpeed;
-        dy = 0; // Default to horizontal if no movement
+      // --- Force 45-degree diagonal start ---
+      const randQuadrant = Math.floor(Math.random() * 4);
+      let dx = 0;
+      let dy = 0;
+      if (randQuadrant === 0) {
+        // Down-Right
+        dx = currentEnemySpeed;
+        dy = currentEnemySpeed;
+      } else if (randQuadrant === 1) {
+        // Down-Left
+        dx = -currentEnemySpeed;
+        dy = currentEnemySpeed;
+      } else if (randQuadrant === 2) {
+        // Up-Left
+        dx = -currentEnemySpeed;
+        dy = -currentEnemySpeed;
+      } else {
+        // Up-Right
+        dx = currentEnemySpeed;
+        dy = -currentEnemySpeed;
       }
 
       enemies.push({
@@ -811,12 +825,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function drawGrid() {
     for (let y = 0; y < GRID_ROWS; y++) {
       for (let x = 0; x < GRID_COLS; x++) {
-        // Draw Captured/Uncaptured state for inner cells AND border fill
         let fillColor = '#000000'; // Default: Uncaptured (Black)
         if (grid[y][x] === CellState.CAPTURED) {
-          fillColor = '#AFEEEE'; // Captured & Border Fill (Pale Turquoise)
+          fillColor = '#00AAAA'; // Captured & Border Fill (Teal/Cyan)
         } else if (grid[y][x] === CellState.TRAIL) {
-          fillColor = '#FFFFFF'; // Trail (White)
+          fillColor = '#FF00FF'; // Trail (Magenta)
         }
         ctx.fillStyle = fillColor;
         ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
@@ -824,41 +837,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  function drawBorder() {
-    // Draw outline around the playable area (inside the 2-cell border)
-    ctx.strokeStyle = '#00008B'; // Outline color (Dark Blue)
-    ctx.lineWidth = 1; // Thin line
-    // Offset by 2 cell sizes inwards from the canvas edge
-    const offsetX = 2 * CELL_SIZE;
-    const offsetY = 2 * CELL_SIZE;
-    ctx.strokeRect(offsetX, offsetY, CANVAS_WIDTH - 2 * offsetX, CANVAS_HEIGHT - 2 * offsetY);
-  }
-
   function drawPlayer() {
-    ctx.fillStyle = '#FFFFFF'; // Player color (white)
-    ctx.fillRect(player.x * CELL_SIZE, player.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    // Draw player as an empty white square with 2px border
+    ctx.strokeStyle = '#FFFFFF'; // Player outline color (White)
+    const lineWidth = 2;
+    ctx.lineWidth = lineWidth;
+    const drawX = player.x * CELL_SIZE;
+    const drawY = player.y * CELL_SIZE;
+    // Offset strokeRect by half the line width to keep the border centered within the cell
+    ctx.strokeRect(
+      drawX + lineWidth / 2,
+      drawY + lineWidth / 2,
+      CELL_SIZE - lineWidth,
+      CELL_SIZE - lineWidth
+    );
   }
 
   function drawEnemies() {
     enemies.forEach((enemy) => {
-      // Reset variables for each enemy
-      let drawX = enemy.x * CELL_SIZE;
-      let drawY = enemy.y * CELL_SIZE;
-      let drawSize = CELL_SIZE;
-      let offsetX = 0;
-      let offsetY = 0;
+      const drawX = enemy.x * CELL_SIZE;
+      const drawY = enemy.y * CELL_SIZE;
 
       if (enemy.type === 'bouncer') {
-        ctx.fillStyle = '#FF00FF'; // Bouncer (Magenta)
+        // Draw bouncer as a solid white circle (8px diameter)
+        ctx.fillStyle = '#FFFFFF'; // Bouncer (White)
+        const radius = 4; // 8px diameter
+        const centerX = drawX + CELL_SIZE / 2;
+        const centerY = drawY + CELL_SIZE / 2;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fill();
       } else if (enemy.type === 'patroller') {
-        ctx.fillStyle = '#FF0000'; // Patroller (Red)
-        // Revert: Draw patroller full size again
-        // const inset = 2;
-        // drawSize = Math.max(1, CELL_SIZE - inset * 2);
-        // offsetX = inset;
-        // offsetY = inset;
+        // Draw patroller as a black outline square with 2px border
+        ctx.strokeStyle = '#000000'; // Patroller outline (Black)
+        const lineWidth = 2;
+        ctx.lineWidth = lineWidth;
+        // Offset strokeRect by half the line width
+        ctx.strokeRect(
+          drawX + lineWidth / 2,
+          drawY + lineWidth / 2,
+          CELL_SIZE - lineWidth,
+          CELL_SIZE - lineWidth
+        );
       }
-      ctx.fillRect(drawX + offsetX, drawY + offsetY, drawSize, drawSize); // Use variables
     });
   }
 
@@ -868,7 +889,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Draw components
     drawGrid();
-    drawBorder(); // Draw border outline over the grid
     drawPlayer();
     drawEnemies();
   }

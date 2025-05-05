@@ -20,7 +20,7 @@ canvas {
     justify-content: space-between;
     width: calc(64 * 10px); /* Match canvas width (GRID_COLS * CELL_SIZE) */
     padding: 5px 10px;
-    background-color: #00008B; /* Dark Blue background for UI */
+    background-color: #00AAAA; /* UI Background (Teal/Cyan) */
     color: #FFFFFF; /* White text */
     font-family: Arial, sans-serif;
     font-size: 16px;
