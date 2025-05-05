@@ -1,29 +1,40 @@
 body {
-    margin: 0;
-    overflow: hidden;
-    background-color: #111;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
+    background-color: #333; /* Dark background for contrast */
+    flex-direction: column;
     font-family: 'Courier New', Courier, monospace;
     color: white;
 }
 
 canvas {
-    border: 2px solid #555;
+    border: 1px solid #555; /* Optional: keep a subtle canvas border */
     background-color: black;
 }
 
 .ui {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    right: 10px;
     display: flex;
     justify-content: space-between;
-    font-size: 1.2em;
-    pointer-events: none; /* Allow clicks through UI */
+    width: calc(64 * 10px); /* Match canvas width (GRID_COLS * CELL_SIZE) */
+    padding: 5px 10px;
+    background-color: #00008B; /* Dark Blue background for UI */
+    color: #FFFFFF; /* White text */
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    box-sizing: border-box;
+    margin-bottom: 5px; /* Space between UI and canvas */
+}
+
+.left-ui span,
+.right-ui span {
+    margin: 0 10px;
+}
+
+.right-ui {
+    text-align: right;
 }
 
 .left-ui, .right-ui {
