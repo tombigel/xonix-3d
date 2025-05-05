@@ -4,14 +4,14 @@ This plan tracks the development milestones for our Xonix 3D Evolution game.
 
 ## Core Gameplay (MVP)
 
-- [ ] **Step 1: Project Setup**
-  - [ ] Create directory structure (`src/components`, `hooks`, `systems`, etc.)
-  - [ ] Implement `SceneCanvas.tsx` (@react-three/fiber)
-  - [ ] Setup `App.tsx` (render canvas, base styles)
-  - [ ] Create `Button.tsx` UI component
-  - [ ] Initialize `gameStore.ts` (Zustand)
-  - [ ] Define initial `Types.ts`
-  - [ ] **Playground/Testing**: Run initial setup with empty canvas to verify rendering pipeline
+- [x] **Step 1: Project Setup**
+  - [x] Create directory structure (`src/components`, `hooks`, `systems`, etc.)
+  - [x] Implement `SceneCanvas.tsx` (@react-three/fiber)
+  - [x] Setup `App.tsx` (render canvas, base styles)
+  - [x] Create `Button.tsx` UI component
+  - [x] Initialize `gameStore.ts` (Zustand)
+  - [x] Define initial `Types.ts`
+  - [x] **Playground/Testing**: Run initial setup with empty canvas to verify rendering pipeline
 - [ ] **Step 2: Classic 2D Xonix (Levels 1-2)**
   - [ ] Implement 2D rectangular grid system in `GridMath.ts`
   - [ ] Create player "cutter" in `Player.tsx` with 4-directional movement

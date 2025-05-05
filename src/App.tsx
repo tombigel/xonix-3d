@@ -1,20 +1,20 @@
-import { Scene } from './components/Scene';
-import { Gamepad2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React from 'react';
+import SceneCanvas from './components/SceneCanvas';
+// Removed HUD import
+// import Menu from './ui/Menu'; // Placeholder for Menu
 
-function App() {
+const App: React.FC = () => {
   return (
-    <div className="w-full h-screen bg-gray-900">
-      <div className="absolute top-0 left-0 z-10 flex items-center gap-2 p-4 text-white">
-        <Gamepad2 className="w-6 h-6" />
-        <h1 className="text-2xl font-bold">Three.js Game</h1>
-        <Button variant="destructive" onClick={() => alert('clicked')} className="w-20">
-          Click me
-        </Button>
-      </div>
-      <Scene />
+    <div className="relative h-screen w-screen overflow-hidden bg-black">
+      {/* 3D Scene */}
+      <SceneCanvas />
+
+      {/* UI Overlay - Removed HUD */}
+      {/* <Menu /> */}
+
+      {/* Removed example button and title overlay for simplicity */}
     </div>
   );
-}
+};
 
 export default App;
