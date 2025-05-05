@@ -226,16 +226,44 @@ function updatePatroller(enemy, grid, gridCols, gridRows, isDrawing, currentTrai
   enemy.dy = dy;
 
   // Check if the *actual* target cell is pathable *after* potential reflection
-  const finalTargetState = getCellState(grid, gridCols, gridRows, x + dx, y + dy);
+  const finalTargetX = x + dx;
+  const finalTargetY = y + dy;
+  const finalTargetState = getCellState(grid, gridCols, gridRows, finalTargetX, finalTargetY);
 
   // Move only if the final target cell is CAPTURED path
   if (finalTargetState === CellState.CAPTURED) {
-    enemy.x += dx;
-    enemy.y += dy;
+    enemy.x = finalTargetX;
+    enemy.y = finalTargetY;
   } else {
     console.log(
-      `Patroller move blocked at (${x},${y}) to (${x + dx},${y + dy}). State: ${finalTargetState}`
+      `Patroller move blocked at (${x},${y}) to (${finalTargetX},${finalTargetY}). State: ${finalTargetState}`
     );
+
+    // Additional handling for being stuck - don't change direction if we're bumping into player
+    if (enemy.stuckCounter > STUCK_THRESHOLD / 2) {
+      // If we're starting to get stuck, try a more drastic direction change
+      const directions = [
+        { dx: speed, dy: 0 },
+        { dx: -speed, dy: 0 },
+        { dx: 0, dy: speed },
+        { dx: 0, dy: -speed },
+      ];
+
+      // Filter to only valid directions
+      const validDirections = directions.filter((dir) => {
+        const checkX = x + dir.dx;
+        const checkY = y + dir.dy;
+        return getCellState(grid, gridCols, gridRows, checkX, checkY) === CellState.CAPTURED;
+      });
+
+      if (validDirections.length > 0) {
+        // Pick a random valid direction
+        const newDir = validDirections[Math.floor(Math.random() * validDirections.length)];
+        enemy.dx = newDir.dx;
+        enemy.dy = newDir.dy;
+        console.log(`Patroller changing direction to (${enemy.dx}, ${enemy.dy})`);
+      }
+    }
   }
 
   // --- Safety Net ---
@@ -412,6 +440,23 @@ export function updateAllEnemies(config) {
       lifeLost = true;
       break; // Stop processing other enemies if one caused life loss
     }
+
+    // --- Post-movement collision check ---
+    // Check if the enemy moved into the player's position
+    if (player && enemy.x === player.x && enemy.y === player.y) {
+      if (enemy.type === 'patroller') {
+        // Patroller kills player regardless of drawing state
+        console.log(`Patroller moved into player at (${player.x}, ${player.y})!`);
+        lifeLost = true;
+        break; // Stop processing other enemies
+      } else if (enemy.type === 'bouncer' && isDrawing) {
+        // Bouncer only kills if player is drawing
+        console.log(`Bouncer moved into player at (${player.x}, ${player.y}) while drawing!`);
+        lifeLost = true;
+        break; // Stop processing other enemies
+      }
+    }
+    // --- End Post-movement collision check ---
   }
 
   // Return the result
