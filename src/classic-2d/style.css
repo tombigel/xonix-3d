@@ -40,4 +40,31 @@ canvas {
 .left-ui, .right-ui {
     display: flex;
     gap: 20px;
-} 
+}
+
+.next-level-button {
+    position: absolute; /* Position over the canvas */
+    left: 50%;
+    top: 60%; /* Adjust as needed */
+    transform: translate(-50%, -50%);
+    padding: 10px 20px;
+    font-size: 1.1em;
+    cursor: pointer;
+    /* Use game colors */
+    background-color: #00AAAA; /* COLOR_CAPTURED (Teal/Cyan) */
+    color: #FFFFFF; /* COLOR_PLAYER_STROKE (White) */
+    border: 2px solid #FFFFFF; /* COLOR_PLAYER_STROKE (White) */
+    border-radius: 0;
+    box-shadow: none;
+    font-family: 'Courier New', Courier, monospace;
+    text-transform: uppercase;
+    z-index: 10;
+}
+
+.next-level-button:hover {
+    /* Slightly brighter version of captured color - adjust if needed */
+    background-color: #00CCCC;
+    color: white;
+}
+
+/* We use inline style="display: none;" initially, so no hidden class needed here */ 

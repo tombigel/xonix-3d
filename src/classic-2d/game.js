@@ -2,12 +2,29 @@
 
 // Import necessary functions and constants from the logic module
 import {
-    initGame,
-    updateGame,
-    handlePlayerInput,
-    getGameState,
-    CellState // Import CellState if needed for drawing distinctions
+  initGame,
+  updateGame,
+  handlePlayerInput,
+  getGameState,
+  CellState,
+  triggerNextLevelStart, // Import the new function
 } from './gameLogic.js';
+
+// Import constants
+import {
+  BASE_ENEMY_COUNT,
+  BASE_PATROLLER_COUNT,
+  BASE_ENEMY_SPEED,
+  CELL_SIZE,
+  COLOR_BACKGROUND,
+  COLOR_CAPTURED,
+  COLOR_TRAIL,
+  COLOR_PLAYER_STROKE,
+  COLOR_ENEMY_BOUNCER_FILL,
+  COLOR_ENEMY_PATROLLER_STROKE,
+  // COLOR_GRID_LINES, // Currently unused, import if needed
+  TIME_STEP,
+} from './constants.js';
 
 // Wait for the DOM to be fully loaded before running the game script
 document.addEventListener('DOMContentLoaded', () => {
@@ -22,25 +39,16 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // --- Rendering Constants ---
-  // Get grid dimensions and cell size from the logic module after init
-  let GRID_COLS, GRID_ROWS, CELL_SIZE;
+  // Grid/Canvas dimensions derived from constants
+  let GRID_COLS, GRID_ROWS;
   let CANVAS_WIDTH, CANVAS_HEIGHT;
-
-  // --- Color Palette (can be customized) ---
-  const COLOR_BACKGROUND = '#000000'; // Black for uncaptured
-  const COLOR_CAPTURED = '#00AAAA'; // Original Teal/Cyan for captured
-  const COLOR_TRAIL = '#FF00FF'; // Original Magenta for trail
-  const COLOR_PLAYER_STROKE = '#FFFFFF'; // Original White for player outline
-  const COLOR_ENEMY_BOUNCER_FILL = '#FFFFFF'; // Original White for bouncer fill
-  const COLOR_ENEMY_PATROLLER_STROKE = '#000000'; // Original Black for patroller outline
-  const COLOR_GRID_LINES = '#333333'; // Dark grey for grid lines
 
   // --- Game Loop State ---
   let lastTime = 0;
   let animationFrameId = null;
   let accumulator = 0;
-  const timeStep = 100; // Update logic every 100ms (like original gameSpeed)
+
+  const nextLevelButton = document.getElementById('nextLevelButton'); // Get button reference
 
   // --- UI Update Function ---
   function updateUI(gameState) {
@@ -165,6 +173,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function drawLevelCompleteScreen(gameState) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // Keep semi-transparent background
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Use game colors
+    ctx.font = 'bold 36px "Courier New", Courier, monospace';
+    ctx.fillStyle = COLOR_TRAIL; // Use Trail color (Magenta) for title
+    ctx.textAlign = 'center';
+    ctx.fillText(`LEVEL ${gameState.level} COMPLETE!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60);
+
+    ctx.font = '20px "Courier New", Courier, monospace';
+    ctx.fillStyle = COLOR_PLAYER_STROKE; // Use Player color (White) for score
+    ctx.fillText(`SCORE: ${gameState.score}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 10);
+  }
+
   function drawGameOver() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -180,14 +203,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Main Render Function ---
   function draw(gameState) {
-    // Clear previous frame (or let drawGrid handle it)
-    // ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
     drawGrid(gameState);
-    drawPlayer(gameState); // Draw player and trail *after* grid background
-    drawEnemies(gameState);
-
-    if (gameState.gameOver) {
+    // Only draw game elements if not level complete or game over
+    if (!gameState.levelComplete && !gameState.gameOver) {
+      drawPlayer(gameState);
+      drawEnemies(gameState);
+    } else if (gameState.levelComplete) {
+      drawLevelCompleteScreen(gameState);
+    } else if (gameState.gameOver) {
       drawGameOver();
     }
   }
@@ -197,32 +220,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const deltaTime = timestamp - lastTime;
     lastTime = timestamp;
 
-    accumulator += deltaTime;
-
-    // Update game logic in fixed steps
-    while (accumulator >= timeStep) {
-      updateGame(); // Call logic update without deltaTime
-      accumulator -= timeStep;
-    }
-
-    // Get the latest state (after potential logic updates)
+    // Get the latest state FIRST to check flags
     const currentState = getGameState();
 
-    // Render the current state
+    // Only update logic if game is running
+    if (currentState.gameRunning) {
+      accumulator += deltaTime;
+      while (accumulator >= TIME_STEP) {
+        updateGame();
+        accumulator -= TIME_STEP;
+      }
+    }
+
+    // Always draw the current state (handles drawing paused/game over/level complete states)
     draw(currentState);
 
-    // Update HUD/UI
+    // Update HUD/UI regardless of gameRunning (to show final scores)
     updateUI(currentState);
 
-    // Continue loop if game is running
-    if (!currentState.gameOver) {
-      // Check game over state from logic module
+    // Show/Hide Next Level Button based on state
+    if (currentState.levelComplete) {
+      nextLevelButton.style.display = 'block';
+    } else {
+      nextLevelButton.style.display = 'none';
+    }
+
+    // Continue loop only if game is not over and level is not complete
+    if (!currentState.gameOver && !currentState.levelComplete) {
       animationFrameId = requestAnimationFrame(gameLoop);
     } else {
-      console.log('Game over detected in render loop.');
-      // Stop loop handled by not requesting next frame
+      console.log('Game loop paused (Game Over or Level Complete).');
+      // Loop stops here
     }
   }
+
+  // --- Button Event Listener ---
+  nextLevelButton.addEventListener('click', () => {
+    console.log('Next level button clicked');
+    nextLevelButton.style.display = 'none'; // Hide button immediately
+    triggerNextLevelStart(); // Call the logic function to advance level
+
+    // Important: Restart the game loop
+    if (animationFrameId) {
+      cancelAnimationFrame(animationFrameId); // Ensure no duplicate loops
+    }
+    lastTime = performance.now(); // Reset time for smooth start
+    accumulator = 0;
+    animationFrameId = requestAnimationFrame(gameLoop);
+  });
 
   // --- Start Game ---
   function startGame() {
@@ -231,15 +276,20 @@ document.addEventListener('DOMContentLoaded', () => {
       animationFrameId = null;
     }
 
-    initGame(); // Initialize game logic (sets level 1 by default)
+    // Pass base enemy config (using imported constants) to initGame
+    initGame(1, {
+      // Assuming level 1 start, pass config object
+      baseEnemyCount: BASE_ENEMY_COUNT,
+      basePatrollerCount: BASE_PATROLLER_COUNT,
+      enemySpeed: BASE_ENEMY_SPEED,
+    });
 
     // Get initial state to set up canvas dimensions
     const initialState = getGameState();
     GRID_COLS = initialState.gridCols;
     GRID_ROWS = initialState.gridRows;
-    CELL_SIZE = initialState.cellSize;
-    CANVAS_WIDTH = GRID_COLS * CELL_SIZE;
-    CANVAS_HEIGHT = GRID_ROWS * CELL_SIZE;
+    CANVAS_WIDTH = GRID_COLS * CELL_SIZE; // Use imported CELL_SIZE
+    CANVAS_HEIGHT = GRID_ROWS * CELL_SIZE; // Use imported CELL_SIZE
     canvas.width = CANVAS_WIDTH;
     canvas.height = CANVAS_HEIGHT;
 
@@ -253,6 +303,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Reset timestamp and start loop
     lastTime = performance.now();
     animationFrameId = requestAnimationFrame(gameLoop);
+
+    // Ensure button is hidden initially
+    nextLevelButton.style.display = 'none';
   }
 
   // --- Initial Setup ---
@@ -260,3 +313,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('Classic Xonix 2D Initialized (DOM Ready)');
 });
+
