@@ -1,16 +1,20 @@
 # Step-by-Step Development Plan for Xonix 3D Evolution
 
 ## Overview
+
 This plan outlines the development approach for a 10-level Xonix game that evolves from a faithful recreation of the classic 2D mechanics to an innovative 3D experience. The implementation uses React, TypeScript, Three.js (via `@react-three/fiber` and `@react-three/drei`), Cannon.js, Vite, and Tailwind CSS. The game will maintain the core capture mechanics of the original Xonix while introducing dimension-shifting gameplay in later levels.
 
 ## Project Context
+
 - Dependencies: React, TypeScript, Three.js, Cannon.js, Tailwind CSS, with supporting libraries for UI primitives and state management
 - UI Components: Custom shadcn/ui-style using `@radix-ui/react-slot`, `class-variance-authority`, and `lucide-react`
 - Structure: Components, hooks, systems, stores, utils, UI, shaders, loaders
 
 ## Development Steps
+
 ### Step 1: Project Structure and Base Setup
-- **Tasks**: 
+
+- **Tasks**:
   - Create the directory structure (`src/` with subdirectories for components, hooks, systems, stores, utils, UI, shaders)
   - Set up Three.js canvas in `SceneCanvas.tsx` using `@react-three/fiber`
   - Configure `App.tsx` with Tailwind styling
@@ -21,9 +25,10 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Ensure the canvas correctly handles responsive sizing for various screens
 
 ### Step 2: Classic Xonix 2D Gameplay (Levels 1-2)
+
 - **Tasks**:
   - Implement a 2D rectangular grid system in `GridMath.ts`
-  - Create the player "cutter" with movement controls in `Player.tsx` 
+  - Create the player "cutter" with movement controls in `Player.tsx`
   - Implement trail-drawing and area-capture algorithm (flood fill or similar)
   - Add two types of enemies (bouncers and patrollers) in `Environment.tsx`
   - Set up collision detection in `PhysicsSystem.ts`
@@ -34,6 +39,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Closely follow the original mechanics with four-directional movement, accurate collision detection, and area filling
 
 ### Step 3: Transition Mechanics (Level 3)
+
 - **Tasks**:
   - Add transition trigger elements (glowing orbs) to Level 3
   - Implement animation system for grid rotation/transformation to 3D
@@ -45,6 +51,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Ensure the transition is visually impressive while maintaining gameplay continuity
 
 ### Step 4: 3D Gameplay (Level 4)
+
 - **Tasks**:
   - Extend grid system to handle multiple planes in 3D space
   - Implement 3D volume capture mechanics (detecting closed 3D shapes)
@@ -55,6 +62,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Balance difficulty when moving to 3D; provide visual cues to help player orientation
 
 ### Step 5: Camera and Control Enhancements
+
 - **Tasks**:
   - Implement switchable camera perspectives (top-down, side, first-person)
   - Add camera control UI elements
@@ -65,6 +73,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Test controls extensively on different devices to ensure intuitive gameplay
 
 ### Step 6: Visual Evolution and Theming (Levels 5-10)
+
 - **Tasks**:
   - Design level progression with increasing complexity
   - Implement visual styles for different level groups:
@@ -81,6 +90,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Maintain gameplay consistency while visuals evolve; ensure each theme feels cohesive
 
 ### Step 7: Optimization and Polishing
+
 - **Tasks**:
   - Optimize rendering performance (instancing, draw call reduction)
   - Tune physics calculations for efficiency
@@ -93,6 +103,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Notes**: Focus on maintaining 60 FPS even on mid-range devices
 
 ## Technical Implementation Guidelines
+
 - Use TypeScript with strict typing throughout
 - Build modular, reusable components and systems
 - Leverage Three.js best practices via `@react-three/fiber` and `@react-three/drei`

@@ -1,18 +1,22 @@
 # Product Definition Rules: Xonix 3D Evolution
 
 ## Product Vision
+
 Develop a modernized Xonix game that evolves from the classic 2D mechanics to an innovative 3D experience across 10 levels. The game stays true to the original 1984 gameplay in early levels (2D grid, area capture mechanics, enemy avoidance), while introducing special zones that trigger transitions to 3D gameplay. Built for desktop and mobile web browsers using React, Three.js, and TypeScript.
 
 ## Target Audience
+
 - Fans of classic arcade games seeking a nostalgic yet fresh experience
 - Modern gamers interested in innovative gameplay evolution
 - Developers evaluating AI-assisted game development
 
 ## Platform
+
 - Web (desktop and mobile browsers)
 - Optimized for Chrome, Firefox, Safari
 
 ## Core Features
+
 - **Classic Xonix Mechanics (Faithful to Original)**:
   - Player controls a "cutter" that moves on a rectangular grid
   - Drawing lines through uncaptured areas, returning to safe zones to capture territory
@@ -64,16 +68,19 @@ Develop a modernized Xonix game that evolves from the classic 2D mechanics to an
   - Sound effects that enhance from basic to sophisticated
 
 ## Non-Functional Requirements
+
 - Performance: 60 FPS on modern devices
 - Responsive design for various screen sizes
 - Build size under 50MB (including assets)
 - Modular code structure for extensibility
 
 ## Constraints
+
 - Development approach: Vibe coding with Cursor IDE
 - Tech stack: React, TypeScript, Three.js (via react-three-fiber), Cannon.js, Tailwind CSS
 
 ## Deliverables
+
 - 10-level prototype hosted on static web server
 - Source code in Git repository
 - Demo showcasing 2D-to-3D progression

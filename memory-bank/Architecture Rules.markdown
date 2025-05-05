@@ -1,9 +1,11 @@
 # Architecture Rules: Xonix Clone Prototype
 
 ## Overview
+
 This document defines the technical architecture for the Xonix clone prototype within the `wow-vibe-coding` project, guiding Cursor IDE to generate modular, type-safe code. The architecture leverages the existing `package.json` dependencies, including React, TypeScript, `@react-three/fiber`, `@react-three/drei`, Cannon.js, Vite, Tailwind CSS, and related libraries, to build a 10-level game evolving from 2D retro to 3D modern visuals.
 
 ## Tech Stack
+
 - **React (18.3.1)**: Component-based UI with functional components.
 - **TypeScript (5.5.3)**: Type-safe logic and interfaces.
 - **@react-three/fiber (8.15.16)**: React wrapper for Three.js (0.161.0) rendering.
@@ -16,7 +18,8 @@ This document defines the technical architecture for the Xonix clone prototype w
 - **Dev Tools**: ESLint (9.9.1), Prettier (3.5.3), `typescript-eslint` (8.3.0) for linting and formatting.
 
 ## Project Structure
-```
+
+```text
 wow-vibe-coding/
 ├── src/
 │   ├── components/
@@ -60,6 +63,7 @@ wow-vibe-coding/
 ```
 
 ## Architectural Principles
+
 - **Modularity**: Components (`components/`), hooks (`hooks/`), and systems (`systems/`) are independent and reusable.
 - **Type Safety**: Define interfaces in `src/utils/Types.ts` for game entities (e.g., `Player`, `Enemy`, `Grid`).
 - **Separation of Concerns**:
@@ -77,6 +81,7 @@ wow-vibe-coding/
   - Swap shaders in `shaders/` for new vibes.
 
 ## Coding Guidelines
+
 - **TypeScript**:
   - Use strict typing in `tsconfig.json` (no `any` types).
   - Define interfaces in `src/utils/Types.ts` for Three.js and Cannon.js objects.
@@ -113,7 +118,9 @@ wow-vibe-coding/
   - Use Prettier with `prettier-plugin-tailwindcss` for consistent formatting.
 
 ## Dependencies
+
 - **From `package.json`**:
+
   ```json
   {
     "dependencies": {
@@ -144,9 +151,11 @@ wow-vibe-coding/
     }
   }
   ```
+
 - **Assumed**: Zustand is implied for state management (add `"zustand": "^4.5.0"` if needed).
 
 ## Notes for Cursor IDE
+
 - Assume `vite.config.ts`, `tsconfig.json`, and `tailwind.config.js` are pre-configured.
 - Use `@react-three/fiber` and `@react-three/drei` for all Three.js rendering.
 - Ensure all files are TypeScript with strict typing.
