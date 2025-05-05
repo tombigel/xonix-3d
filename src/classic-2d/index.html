@@ -9,18 +9,22 @@
 </head>
 
 <body>
-    <div class="ui">
-        <div class="left-ui">
-            <span>Score: <span id="score">0</span></span>
-        </div>
-        <div class="right-ui">
-            <span>Lives: <span id="lives">3</span></span>
-            <span>Captured: <span id="captured">0</span>%</span>
-            <span>Level: <span id="level">1</span></span>
+    <h1>Classic Xonix 2D</h1>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui">
+            <div>Level: <span id="level">1</span></div>
+            <div>Score: <span id="score">0</span></div>
+            <div>Lives: <span id="lives">3</span></div>
+            <div>Captured: <span id="captured">0</span>% / <span id="target-percentage">75</span>%</div>
         </div>
     </div>
-    <canvas id="gameCanvas"></canvas>
-    <script src="game.js"></script>
+<!-- Load scripts as modules -->
+<!-- gameLogic.js needs to be loaded first if game.js depends on it immediately -->
+<!-- Since game.js wraps its logic in DOMContentLoaded, order might not strictly matter,
+         but it's clearer to load logic first. -->
+<script type="module" src="gameLogic.js"></script>
+<script type="module" src="game.js"></script>
 </body>
 
 </html>
