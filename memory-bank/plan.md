@@ -12,6 +12,17 @@ This plan tracks the development milestones for our Xonix 3D Evolution game.
   - [x] Initialize `gameStore.ts` (Zustand)
   - [x] Define initial `Types.ts`
   - [x] **Playground/Testing**: Run initial setup with empty canvas to verify rendering pipeline
+- [ ] **Step 1.5: Implement Classic 2D JS Version (Canvas API)**
+  - [ ] Create basic HTML/CSS/JS file structure (`src/classic-2d/`)
+  - [ ] Implement Canvas setup and basic rendering loop (`requestAnimationFrame`)
+  - [ ] Implement Grid representation (2D array: Uncaptured, Captured, Trail)
+  - [ ] Implement Player rendering and 4-directional keyboard movement
+  - [ ] Implement Trail drawing logic (update grid state)
+  - [ ] Implement Area Capture logic (detect return to safe zone, basic flood fill)
+  - [ ] Implement basic Enemy rendering and movement (Bouncer, Patroller)
+  - [ ] Implement basic Collision Detection (Player-Enemy, Player-Trail)
+  - [ ] Implement Lives and Score display
+  - [ ] **Playground/Testing**: Verify core 2D Xonix gameplay loop.
 - [ ] **Step 2: Classic 2D Xonix (Levels 1-2)**
   - [ ] Implement 2D rectangular grid system in `GridMath.ts`
   - [ ] Create player "cutter" in `Player.tsx` with 4-directional movement
