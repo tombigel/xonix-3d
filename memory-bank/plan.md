@@ -23,17 +23,45 @@ This plan tracks the development milestones for our Xonix 3D Evolution game.
   - [x] Implement basic Collision Detection (Player-Enemy, Player-Trail)
   - [x] Implement Lives and Score display
   - [x] **Playground/Testing**: Verify core 2D Xonix gameplay loop.
-- [ ] **Step 2: Classic 2D Xonix (Levels 1-2)**
-  - [ ] Implement 2D rectangular grid system in `GridMath.ts`
-  - [ ] Create player "cutter" in `Player.tsx` with 4-directional movement
-  - [ ] Implement trail drawing when moving through unsafe zones
-  - [ ] Create area capture algorithm (flood fill) upon returning to safe zones
-  - [ ] Add bouncers (reflect off walls) and patrollers (move along borders) in `Environment.tsx`
-  - [ ] Setup collision detection in `PhysicsSystem.ts` (player-enemy, player-trail)
-  - [ ] Create HUD showing lives, score, and capture percentage
-  - [ ] Apply CGA pixel shader for retro aesthetic
-  - [ ] Implement level completion logic (80% area capture)
-  - [ ] **Playground/Testing**: Test classic Xonix gameplay with area capture and enemies
+- [ ] **Step 2: 3D Visualization of Classic Gameplay**
+  - [ ] **Game Logic Bridge**
+    - [ ] Create game logic adapter to connect classic-2d logic to Three.js renderer
+    - [ ] Implement state synchronization between game logic and 3D representation
+    - [ ] Extract reusable constants and types to shared modules
+  - [ ] **3D Scene Setup**
+    - [ ] Setup Three.js scene with camera and lighting in `Scene3D.tsx`
+    - [ ] Create flat 3D grid plane with z-height variations for cell states
+    - [ ] Implement color/material differentiation for different cell states
+  - [ ] **3D Asset Creation**
+    - [ ] Design and implement 3D player model with animations
+    - [ ] Create 3D models for bouncer and patroller enemies
+    - [ ] Design 3D trail effect with glow/particle emission
+    - [ ] Add captured area visual effects (textured surfaces, lighting)
+  - [ ] **Camera & Controls**
+    - [ ] Implement dynamic camera system with multiple view options
+    - [ ] Create orbital camera control for player observation
+    - [ ] Add top-down view option (similar to classic perspective)
+    - [ ] Implement smooth camera transitions between views
+  - [ ] **UI Integration**
+    - [ ] Create 3D-appropriate HUD overlay with score and lives
+    - [ ] Implement percentage completion meter
+    - [ ] Add game state indicators (level, pause, game over)
+    - [ ] Design 3D menu and transition screens
+  - [ ] **Performance & Effects**
+    - [ ] Implement efficient instancing for grid cells
+    - [ ] Add post-processing effects (bloom for trails, etc.)
+    - [ ] Optimize rendering pipeline for mobile compatibility
+    - [ ] Add ambient effects (particles, background elements)
+  - [ ] **Build System Updates**
+    - [ ] Update package.json scripts to support both versions:
+      - [ ] Add `dev:classic` and `dev:3d` script commands
+      - [ ] Create `build:classic` and `build:3d` build scripts
+      - [ ] Add combined build command for production
+    - [ ] Implement shared asset loading system
+  - [ ] **Playground/Testing**
+    - [ ] Create test levels to showcase 3D visualization
+    - [ ] Perform cross-browser compatibility testing
+    - [ ] Optimize for different device capabilities
 - [ ] **Step 3: 3D Transition (Level 3)**
   - [ ] Add special transition triggers (glowing orbs) to level
   - [ ] Create `AnimationSystem.ts` for 2D→3D grid rotation animation
