@@ -177,14 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; // Keep semi-transparent background
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Use game colors
-    ctx.font = 'bold 36px "Courier New", Courier, monospace';
-    ctx.fillStyle = COLOR_TRAIL; // Use Trail color (Magenta) for title
+    // Use VT323 font
+    ctx.font = 'bold 48px "VT323", monospace'; // Adjust size as needed
+    ctx.fillStyle = COLOR_TRAIL;
     ctx.textAlign = 'center';
     ctx.fillText(`LEVEL ${gameState.level} COMPLETE!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 60);
 
-    ctx.font = '20px "Courier New", Courier, monospace';
-    ctx.fillStyle = COLOR_PLAYER_STROKE; // Use Player color (White) for score
+    ctx.font = '28px "VT323", monospace'; // Adjust size as needed
+    ctx.fillStyle = COLOR_PLAYER_STROKE;
     ctx.fillText(`SCORE: ${gameState.score}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 10);
   }
 
@@ -192,13 +192,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    ctx.font = '48px Arial';
+    // Use VT323 font
+    ctx.font = 'bold 72px "VT323", monospace'; // Adjust size as needed
     ctx.fillStyle = '#FFFFFF';
     ctx.textAlign = 'center';
     ctx.fillText('GAME OVER', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
 
-    ctx.font = '24px Arial';
-    ctx.fillText('Press R to Restart', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
+    ctx.font = '36px "VT323", monospace'; // Adjust size as needed
+    ctx.fillText('Press R to Restart', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 30);
   }
 
   // --- Main Render Function ---
