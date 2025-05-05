@@ -67,20 +67,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Input Handling ---
   function handleKeyDown(event) {
-    // Prevent default browser actions for arrow keys
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
-      event.preventDefault();
-      // Pass the direction to the game logic module
-      handlePlayerInput(event.key);
+    const currentState = getGameState(); // Get state to check flags
+
+    // --- Handle Level Complete Start ---
+    if (currentState.levelComplete) {
+      console.log('Key pressed during level complete screen.');
+      nextLevelButton.style.display = 'none'; // Hide button if visible
+      triggerNextLevelStart(); // Call the logic function
+
+      // Restart the game loop
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+      lastTime = performance.now();
+      accumulator = 0;
+      animationFrameId = requestAnimationFrame(gameLoop);
+      return; // Don't process other inputs if starting next level
     }
-    // Add key for restarting game after game over
-    if (event.key === 'r' || event.key === 'R') {
-      const currentState = getGameState();
-      if (currentState.gameOver) {
-        console.log('Restarting game...');
-        startGame();
+    // --- End Level Complete Start ---
+
+    // --- Handle Gameplay Input ---
+    if (!currentState.gameOver) {
+      // Only handle gameplay keys if game not over
+      // Prevent default browser actions for arrow keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        event.preventDefault();
+        // Pass the direction to the game logic module
+        handlePlayerInput(event.key);
       }
     }
+    // --- End Gameplay Input ---
+
+    // --- Handle Restart Input --- (Keep this separate)
+    if (event.key === 'r' || event.key === 'R') {
+      if (currentState.gameOver) {
+        console.log('Restarting game...');
+        startGame(); // Restart game if game over
+      }
+    }
+    // --- End Restart Input ---
   }
 
   // --- Drawing Functions ---
