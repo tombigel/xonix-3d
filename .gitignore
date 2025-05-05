@@ -34,3 +34,6 @@ vite.config.ts.timestamp-*.mjs
 
 # Bolt directory (if not needed in repo)
 .bolt/
+
+# Cursor
+.history/

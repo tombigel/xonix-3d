@@ -14,24 +14,34 @@ This plan tracks the development milestones for our Xonix 3D Evolution game.
   - [x] **Playground/Testing**: Run initial setup with empty canvas to verify rendering pipeline
 - [x] **Step 1.5: Implement Classic 2D JS Version (Canvas API)**
   - [x] Create basic HTML/CSS/JS file structure (`src/classic-2d/`)
-  - [x] Implement Canvas setup and basic rendering loop (`requestAnimationFrame`)
-  - [x] Implement Grid representation (2D array: Uncaptured, Captured, Trail)
-  - [x] Implement Player rendering and 4-directional keyboard movement
-  - [x] Implement Trail drawing logic (update grid state)
-  - [x] Implement Area Capture logic (detect return to safe zone, basic flood fill)
-  - [x] Implement basic Enemy rendering and movement (Bouncer, Patroller)
-  - [x] Implement basic Collision Detection (Player-Enemy, Player-Trail)
-  - [x] Implement Lives and Score display
-  - [x] **Playground/Testing**: Verify core 2D Xonix gameplay loop.
+  - [x] Define core constants (`constants.js`) as per Implementation Guide (CELL_SIZE, colors, timing, base enemy config)
+  - [x] Implement core game state and logic (`gameLogic.js`) according to Implementation Guide:
+    - [x] Grid representation (2D array: Uncaptured, Captured, Trail) using `CellState` enum.
+    - [x] Player state and 4-directional input handling (`handlePlayerInput`).
+    - [x] Trail drawing logic (`isDrawing`, `currentTrail`, updating grid).
+    - [x] Area Capture logic (flood fill, scoring, life check) triggered on reaching `CAPTURED` state.
+    - [x] State management functions (`initGame`, `updateGame`, `getGameState`).
+    - [x] Level progression logic (`triggerNextLevelStart`).
+  - [x] Implement enemy behavior (`enemyLogic.js`) according to Implementation Guide:
+    - [x] Enemy state (position, type, direction).
+    - [x] Enemy initialization (`initializeEnemies` based on level/config).
+    - [x] Enemy movement logic (Bouncer bouncing, Patroller following paths).
+    - [x] Enemy update function (`updateAllEnemies`).
+  - [x] Implement rendering layer (`game.js`):
+    - [x] Canvas setup and rendering loop (`requestAnimationFrame`).
+    - [x] Draw grid, player, enemies, and trail based on `getGameState()`.
+    - [x] Handle keyboard input and call `handlePlayerInput`.
+    - [x] Display Lives, Score, Level, Captured % from `getGameState()`.
+    - [x] Implement Game Over / Level Complete screens and logic transitions.
+  - [x] **Playground/Testing**: Verify core 2D Xonix gameplay loop using the defined module structure.
 - [ ] **Step 2: 3D Visualization of Classic Gameplay**
   - [ ] **Game Logic Bridge**
-    - [ ] Create game logic adapter to connect classic-2d logic to Three.js renderer
-    - [ ] Implement state synchronization between game logic and 3D representation
-    - [ ] Extract reusable constants and types to shared modules
+    - [ ] Create game logic adapter/hook (`useGameLogic.ts`?) to interact with the classic-2d modules (`gameLogic.js`, `enemyLogic.js`, `constants.js`) following the interfaces defined in `Implementation Guide - Classic 2D Logic.md`.
+    - [ ] Implement state synchronization: Call `initGame` on setup, `handlePlayerInput` on user input, call `updateGame` based on `TIME_STEP`, and read `getGameState()` each frame for rendering.
+    - [ ] Ensure `constants.js` (like `GRID_COLS`, `GRID_ROWS`, `CELL_SIZE`) are used to drive the 3D visualization dimensions.
   - [ ] **3D Scene Setup**
-    - [ ] Setup Three.js scene with camera and lighting in `Scene3D.tsx`
-    - [ ] Create flat 3D grid plane with z-height variations for cell states
-    - [ ] Implement color/material differentiation for different cell states
+    - [ ] Setup Three.js scene with camera and lighting in `Scene3D.tsx`.
+    - [ ] Create flat 3D grid plane based on `gridCols`, `gridRows`, `CELL_SIZE`. Use `grid` state from `getGameState()` to determine cell height/material.
   - [ ] **3D Asset Creation**
     - [ ] Design and implement 3D player model with animations
     - [ ] Create 3D models for bouncer and patroller enemies

@@ -339,4 +339,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
   console.log('Classic Xonix 2D Initialized (DOM Ready)');
 });
-

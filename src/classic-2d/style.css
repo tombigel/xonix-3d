@@ -1,70 +1,71 @@
 body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #333; /* Dark background for contrast */
-    flex-direction: column;
-    font-family: 'VT323', monospace;
-    color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #333; /* Dark background for contrast */
+  flex-direction: column;
+  font-family: 'VT323', monospace;
+  color: white;
 }
 
 canvas {
-    border: 1px solid #555; /* Optional: keep a subtle canvas border */
-    background-color: black;
+  border: 1px solid #555; /* Optional: keep a subtle canvas border */
+  background-color: black;
 }
 
 .ui {
-    display: flex;
-    justify-content: space-between;
-    width: calc(64 * 10px); /* Match canvas width (GRID_COLS * CELL_SIZE) */
-    padding: 5px 10px;
-    background-color: #00AAAA; /* UI Background (Teal/Cyan) */
-    color: #FFFFFF; /* White text */
-    font-family: 'VT323', monospace;
-    font-size: 22px;
-    box-sizing: border-box;
-    margin-bottom: 5px; /* Space between UI and canvas */
+  display: flex;
+  justify-content: space-between;
+  width: calc(64 * 10px); /* Match canvas width (GRID_COLS * CELL_SIZE) */
+  padding: 5px 10px;
+  background-color: #00aaaa; /* UI Background (Teal/Cyan) */
+  color: #ffffff; /* White text */
+  font-family: 'VT323', monospace;
+  font-size: 22px;
+  box-sizing: border-box;
+  margin-bottom: 5px; /* Space between UI and canvas */
 }
 
 .left-ui span,
 .right-ui span {
-    margin: 0 10px;
+  margin: 0 10px;
 }
 
 .right-ui {
-    text-align: right;
+  text-align: right;
 }
 
-.left-ui, .right-ui {
-    display: flex;
-    gap: 20px;
+.left-ui,
+.right-ui {
+  display: flex;
+  gap: 20px;
 }
 
 .next-level-button {
-    position: absolute; /* Position over the canvas */
-    left: 50%;
-    top: 60%; /* Adjust as needed */
-    transform: translate(-50%, -50%);
-    padding: 10px 20px;
-    font-size: 1.3em;
-    cursor: pointer;
-    /* Use game colors */
-    background-color: #00AAAA; /* COLOR_CAPTURED (Teal/Cyan) */
-    color: #FFFFFF; /* COLOR_PLAYER_STROKE (White) */
-    border: 2px solid #FFFFFF; /* COLOR_PLAYER_STROKE (White) */
-    border-radius: 0;
-    box-shadow: none;
-    font-family: 'VT323', monospace;
-    text-transform: uppercase;
-    z-index: 10;
+  position: absolute; /* Position over the canvas */
+  left: 50%;
+  top: 60%; /* Adjust as needed */
+  transform: translate(-50%, -50%);
+  padding: 10px 20px;
+  font-size: 1.3em;
+  cursor: pointer;
+  /* Use game colors */
+  background-color: #00aaaa; /* COLOR_CAPTURED (Teal/Cyan) */
+  color: #ffffff; /* COLOR_PLAYER_STROKE (White) */
+  border: 2px solid #ffffff; /* COLOR_PLAYER_STROKE (White) */
+  border-radius: 0;
+  box-shadow: none;
+  font-family: 'VT323', monospace;
+  text-transform: uppercase;
+  z-index: 10;
 }
 
 .next-level-button:hover {
-    /* Slightly brighter version of captured color - adjust if needed */
-    background-color: #00CCCC;
-    color: white;
+  /* Slightly brighter version of captured color - adjust if needed */
+  background-color: #00cccc;
+  color: white;
 }
 
-/* We use inline style="display: none;" initially, so no hidden class needed here */ 
+/* We use inline style="display: none;" initially, so no hidden class needed here */

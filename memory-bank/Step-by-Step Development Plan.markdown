@@ -27,7 +27,7 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 ### Step 1.5: Classic Xonix 2D JavaScript Implementation
 
 - **Tasks**:
-  - Create basic HTML/CSS/JS file structure in `src/classic-2d/`
+  - Create basic HTML/CSS/JS file structure in `src/classic-2d/`.
   - Implement Canvas setup and rendering loop using `requestAnimationFrame`
   - Build grid representation with cell states (Uncaptured, Captured, Trail)
   - Create player movement with 4-directional controls
@@ -35,20 +35,42 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
   - Add enemy types (bouncers and patrollers) with distinct behaviors
   - Develop collision detection system for player, enemies, and trails
   - Add lives and scoring system with visual display
-- **Output**: Standalone classic Xonix implementation using vanilla JavaScript
-- **Notes**: This serves as a foundation for the game logic to be used in the 3D version
+  - Define core constants (`constants.js`) adhering to `Implementation Guide - Classic 2D Logic.md` (e.g., `CELL_SIZE`, colors, timing, `BASE_ENEMY_COUNT`).
+  - Implement core game logic (`gameLogic.js`) based on the guide, including:
+    - `CellState` enum, grid management, player state/movement (`handlePlayerInput`).
+    - Trail logic (`isDrawing`, `currentTrail`), flood fill for area capture.
+    - Scoring, lives, level management (`initGame`, `updateGame`, `triggerNextLevelStart`).
+    - `getGameState()` function providing the defined state structure.
+  - Implement enemy logic (`enemyLogic.js`) based on the guide, including:
+    - `initializeEnemies(config)` function for level-based setup.
+    - `updateAllEnemies(config)` function handling movement and collision checks (Bouncer/Patroller behaviors).
+    - Returning `{ lifeLost: boolean }` from `updateAllEnemies`.
+  - Implement the rendering/UI layer (`game.js`) to:
+    - Initialize the canvas and run the game loop (`requestAnimationFrame`).
+    - Call `gameLogic.initGame` and `gameLogic.updateGame` appropriately.
+    - Read state using `gameLogic.getGameState()` for drawing the grid, player, enemies, and trail.
+    - Handle user input (keyboard) and call `gameLogic.handlePlayerInput`.
+    - Display HUD info (score, lives, etc.) from game state.
+    - Manage UI state for game over/level complete screens.
+- **Output**: Standalone classic Xonix implementation using vanilla JavaScript, structured according to the defined module interfaces.
+- **Notes**: This serves as the reusable game logic foundation for the 3D version, adhering to the specified interfaces.
 
 ### Step 2: 3D Visualization of Classic Gameplay
 
 - **Tasks**:
   - **Game Logic Bridge**:
-    - Create adapter to connect classic-2d game logic to Three.js renderer
-    - Implement state synchronization between game logic and 3D representation
-    - Extract reusable constants and types to shared modules
+    - Create an adapter/hook (e.g., `useGameLogicAdapter.ts`) to manage interaction with the classic-2d modules (`gameLogic.js`, `enemyLogic.js`, `constants.js`) as defined in `Implementation Guide - Classic 2D Logic.md`.
+    - This adapter should:
+      - Call `initGame` on mount/start.
+      - Call `handlePlayerInput` when receiving input events.
+      - Call `updateGame` periodically based on `TIME_STEP` from `constants.js`.
+      - Call `getGameState()` every frame to retrieve the latest state for rendering.
+      - Handle `triggerNextLevelStart` when appropriate (e.g., after level complete UI).
+    - Utilize constants like `GRID_COLS`, `GRID_ROWS`, `CELL_SIZE` from `constants.js` for scene setup.
   - **3D Scene Setup**:
     - Set up Three.js scene with appropriate camera and lighting in `Scene3D.tsx`
-    - Create flat 3D grid plane with z-height variations for cell states
-    - Implement materials and shaders for different cell states
+    - Create a flat 3D grid/plane based on `gridCols`/`gridRows` from `getGameState()`. Use `CELL_SIZE` for scaling.
+    - Visualize the `grid` array from `getGameState()` by varying cell height, material, or color based on `CellState` (`UNCAPTURED`, `CAPTURED`, `TRAIL`).
   - **3D Asset Creation**:
     - Design 3D player model with animations for movement
     - Create 3D enemy models for bouncers and patrollers

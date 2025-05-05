@@ -1,39 +1,39 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Classic Xonix 2D</title>
     <!-- Google Font Import -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet" />
     <!-- Stylesheet -->
-    <link rel="stylesheet" href="style.css">
-</head>
+    <link rel="stylesheet" href="style.css" />
+  </head>
 
-<body>
+  <body>
     <h1>Classic Xonix 2D</h1>
     <div class="game-container">
-        <canvas id="gameCanvas"></canvas>
-        <div class="ui">
-            <div>Level: <span id="level">1</span></div>
-            <div>Score: <span id="score">0</span></div>
-            <div>Lives: <span id="lives">3</span></div>
-            <div>Captured: <span id="captured">0</span>% / <span id="target-percentage">75</span>%</div>
-        </div>
-        <!-- Add button for next level -->
-        <button id="nextLevelButton" class="next-level-button" style="display: none;">Start Next Level</button>
+      <canvas id="gameCanvas"></canvas>
+      <div class="ui">
+        <div>Level: <span id="level">1</span></div>
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+        <div>Captured: <span id="captured">0</span>% / <span id="target-percentage">75</span>%</div>
+      </div>
+      <!-- Add button for next level -->
+      <button id="nextLevelButton" class="next-level-button" style="display: none">
+        Start Next Level
+      </button>
     </div>
-<!-- Load scripts as modules -->
-<!-- gameLogic.js needs to be loaded first if game.js depends on it immediately -->
-<!-- Since game.js wraps its logic in DOMContentLoaded, order might not strictly matter,
+    <!-- Load scripts as modules -->
+    <!-- gameLogic.js needs to be loaded first if game.js depends on it immediately -->
+    <!-- Since game.js wraps its logic in DOMContentLoaded, order might not strictly matter,
          but it's clearer to load logic first. -->
     <script type="module" src="constants.js"></script>
     <script type="module" src="gameLogic.js"></script>
     <script type="module" src="enemyLogic.js"></script>
     <script type="module" src="game.js"></script>
-</body>
-
+  </body>
 </html>
