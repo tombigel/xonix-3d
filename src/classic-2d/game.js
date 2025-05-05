@@ -21,6 +21,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const CANVAS_WIDTH = GRID_COLS * CELL_SIZE;
   const CANVAS_HEIGHT = GRID_ROWS * CELL_SIZE;
 
+  const PLAYER_START_POS = { x: GRID_COLS / 2, y: GRID_ROWS - 1 };
+
   canvas.width = CANVAS_WIDTH;
   canvas.height = CANVAS_HEIGHT;
 
@@ -28,11 +30,16 @@ document.addEventListener('DOMContentLoaded', () => {
   let score = 0;
   let lives = 3;
   let capturedPercentage = 0;
-  let player = { x: GRID_COLS / 2, y: GRID_ROWS - 1, dx: 0, dy: 0 }; // Start on border
+  let player = { ...PLAYER_START_POS, dx: 0, dy: 0 }; // Use constant
   let grid = []; // 2D array for grid state
   let currentTrail = [];
   let isDrawing = false;
   let enemies = [];
+  const ENEMY_COUNT = 3; // 1 Patroller, 2 Bouncers for example
+  const PATROLLER_COUNT = 1;
+  const BOUNCER_COUNT = ENEMY_COUNT - PATROLLER_COUNT;
+  const ENEMY_SPEED = 1; // Grid cells per update cycle
+  const TARGET_PERCENTAGE = 75; // Win condition
 
   // --- Cell States Enum (Simple JS version) ---
   const CellState = {
@@ -55,6 +62,95 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     console.log('Grid initialized');
+  }
+
+  function initializeEnemies(patrollerCount, bouncerCount) {
+    enemies = [];
+
+    // Initialize Patrollers on the border
+    for (let i = 0; i < patrollerCount; i++) {
+      // Example starting positions and directions
+      let startX, startY, startDX, startDY;
+      if (i % 2 === 0) {
+        // Start top-left, going right
+        startX = 1;
+        startY = 0;
+        startDX = ENEMY_SPEED;
+        startDY = 0;
+      } else {
+        // Start bottom-right, going left
+        startX = GRID_COLS - 2;
+        startY = GRID_ROWS - 1;
+        startDX = -ENEMY_SPEED;
+        startDY = 0;
+      }
+      enemies.push({
+        type: 'patroller',
+        x: startX,
+        y: startY,
+        dx: startDX,
+        dy: startDY,
+      });
+    }
+
+    // Initialize Bouncers in the uncaptured area
+    for (let i = 0; i < bouncerCount; i++) {
+      let enemyX, enemyY;
+      do {
+        enemyX = Math.floor(Math.random() * (GRID_COLS - 2)) + 1;
+        enemyY = Math.floor(Math.random() * (GRID_ROWS - 2)) + 1;
+      } while (
+        grid[enemyY][enemyX] !== CellState.UNCAPTURED ||
+        enemies.some((e) => e.x === enemyX && e.y === enemyY) || // Avoid other enemies
+        (enemyX === player.x && enemyY === player.y)
+      ); // Avoid player start
+
+      const angle = Math.random() * Math.PI * 2;
+      let dx = Math.round(Math.cos(angle) * ENEMY_SPEED);
+      let dy = Math.round(Math.sin(angle) * ENEMY_SPEED);
+      if (dx === 0 && dy === 0) {
+        // Ensure movement
+        dx = Math.random() > 0.5 ? ENEMY_SPEED : -ENEMY_SPEED;
+      }
+
+      enemies.push({
+        type: 'bouncer',
+        x: enemyX,
+        y: enemyY,
+        dx: dx,
+        dy: dy,
+      });
+    }
+    console.log('Enemies initialized:', enemies);
+  }
+
+  function resetPlayerPosition() {
+    player.x = PLAYER_START_POS.x;
+    player.y = PLAYER_START_POS.y;
+    player.dx = 0;
+    player.dy = 0;
+  }
+
+  function loseLife() {
+    lives--;
+    console.log(`Life lost! Lives remaining: ${lives}`);
+    isDrawing = false;
+    // Clear visual trail from grid
+    currentTrail.forEach((p) => {
+      if (grid[p.y]?.[p.x] === CellState.TRAIL) {
+        grid[p.y][p.x] = CellState.UNCAPTURED;
+      }
+    });
+    currentTrail = [];
+    resetPlayerPosition();
+    updateUI();
+
+    if (lives <= 0) {
+      // TODO: Implement Game Over logic
+      console.log('GAME OVER');
+      alert('Game Over!'); // Simple alert for now
+      // Optionally reset game or stop loop
+    }
   }
 
   function updateUI() {
@@ -258,7 +354,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     console.log('floodFillAndCapture finished.');
-    return actualPointsAdded;
+    // Check win condition AFTER updating the grid and recalculating
+    capturedPercentage = calculateCapturedPercentage();
+    updateUI(); // Update UI immediately after capture
+    if (capturedPercentage >= TARGET_PERCENTAGE) {
+      winGame();
+    }
+    return actualPointsAdded; // Return captured count for scoring maybe?
   }
 
   function calculateCapturedPercentage() {
@@ -278,8 +380,188 @@ document.addEventListener('DOMContentLoaded', () => {
     return totalPlayable > 0 ? (capturedCount / totalPlayable) * 100 : 0;
   }
 
+  function updateEnemies() {
+    enemies.forEach((enemy) => {
+      if (enemy.type === 'bouncer') {
+        updateBouncer(enemy);
+      } else if (enemy.type === 'patroller') {
+        updatePatroller(enemy);
+      }
+    });
+  }
+
+  function updateBouncer(enemy) {
+    const nextX = enemy.x + enemy.dx;
+    const nextY = enemy.y + enemy.dy;
+    let bounced = false;
+
+    // Bouncer collision with Trail
+    if (grid[nextY]?.[nextX] === CellState.TRAIL) {
+      console.log('Bouncer hit trail!');
+      loseLife();
+      return; // Stop processing this enemy
+    }
+
+    // Bouncer collision with Walls/Captured Area
+    let collidedX = false;
+    let collidedY = false;
+
+    // Check X collision (simplified: check target cell)
+    if (nextX <= 0 || nextX >= GRID_COLS - 1 || grid[enemy.y]?.[nextX] === CellState.CAPTURED) {
+      enemy.dx *= -1;
+      collidedX = true;
+      bounced = true;
+    }
+    // Check Y collision (simplified: check target cell)
+    if (nextY <= 0 || nextY >= GRID_ROWS - 1 || grid[nextY]?.[enemy.x] === CellState.CAPTURED) {
+      enemy.dy *= -1;
+      collidedY = true;
+      bounced = true;
+    }
+
+    // If it bounced diagonally off a corner, ensure it continues away
+    if (collidedX && collidedY) {
+      // Already reversed both dx and dy
+    } else if (collidedX) {
+      // If only X collided, check if the original nextY is valid before moving
+      if (nextY > 0 && nextY < GRID_ROWS - 1 && grid[nextY]?.[enemy.x] !== CellState.CAPTURED) {
+        // Okay to move vertically
+      } else {
+        // Hit a vertical wall while moving horizontally, reverse Y too? Or just stop Y?
+        // For simplicity, let's assume it can still move vertically if the path is clear
+      }
+    } else if (collidedY) {
+      // If only Y collided, check if the original nextX is valid before moving
+      if (nextX > 0 && nextX < GRID_COLS - 1 && grid[enemy.y]?.[nextX] !== CellState.CAPTURED) {
+        // Okay to move horizontally
+      } else {
+        // Hit a horizontal wall while moving vertically, reverse X too? Or stop X?
+      }
+    }
+
+    // Recalculate final position after bounce adjustments
+    const finalNextX = enemy.x + enemy.dx;
+    const finalNextY = enemy.y + enemy.dy;
+
+    // Final check before moving
+    if (
+      finalNextX > 0 &&
+      finalNextX < GRID_COLS - 1 &&
+      finalNextY > 0 &&
+      finalNextY < GRID_ROWS - 1 &&
+      grid[finalNextY]?.[finalNextX] !== CellState.CAPTURED &&
+      grid[finalNextY]?.[finalNextX] !== CellState.TRAIL
+    ) {
+      // Double check trail
+      enemy.x = finalNextX;
+      enemy.y = finalNextY;
+    } else {
+      // If still stuck after bounce logic (e.g. corner), maybe just stop?
+      // Or try another bounce? For now, it might just oscillate if logic isn't perfect.
+      // Let's try reversing again if it didn't move
+      if (!bounced) {
+        // Prevent infinite loops if bounce logic failed
+        enemy.dx *= -1;
+        enemy.dy *= -1;
+      }
+    }
+  }
+
+  function updatePatroller(enemy) {
+    // Patroller movement: Follow the border of the captured area
+    // Uses a 'wall follower' (left-hand rule or right-hand rule) approach.
+    // Let's use a simplified right-hand rule: Try to turn right, if not possible go straight, if not possible turn left.
+
+    const { x, y, dx, dy } = enemy;
+
+    // Calculate potential next cells based on current direction
+    const forwardX = x + dx;
+    const forwardY = y + dy;
+
+    // Calculate relative right turn based on current direction (dx, dy)
+    // (0, -1) Up -> Right is (1, 0)
+    // (1, 0) Right -> Right is (0, 1)
+    // (0, 1) Down -> Right is (-1, 0)
+    // (-1, 0) Left -> Right is (0, -1)
+    const rightDX = -dy;
+    const rightDY = dx;
+    const rightX = x + rightDX;
+    const rightY = y + rightDY;
+
+    // Calculate relative left turn
+    const leftDX = dy;
+    const leftDY = -dx;
+    const leftX = x + leftDX;
+    const leftY = y + leftDY;
+
+    // Helper to check if a cell is safe (captured or border)
+    const isSafe = (cx, cy) =>
+      cx >= 0 &&
+      cx < GRID_COLS &&
+      cy >= 0 &&
+      cy < GRID_ROWS &&
+      grid[cy]?.[cx] === CellState.CAPTURED;
+
+    // Helper to check for trail collision
+    const checkTrailCollision = (cx, cy) => {
+      if (grid[cy]?.[cx] === CellState.TRAIL) {
+        console.log('Patroller hit trail!');
+        loseLife();
+        return true;
+      }
+      return false;
+    };
+
+    // Check for trail collision immediately ahead
+    if (checkTrailCollision(forwardX, forwardY)) return;
+
+    // --- Movement Logic ---
+    let moved = false;
+
+    // 1. Check cell to the right: If it's NOT safe (uncaptured), turn right and move there.
+    if (!isSafe(rightX, rightY)) {
+      if (checkTrailCollision(rightX, rightY)) return;
+      enemy.dx = rightDX;
+      enemy.dy = rightDY;
+      enemy.x = rightX;
+      enemy.y = rightY;
+      moved = true;
+      // console.log("Patroller turned right");
+    }
+
+    // 2. If not turned right, check cell forward: If it IS safe, move forward.
+    if (!moved && isSafe(forwardX, forwardY)) {
+      // Already checked for trail collision above
+      enemy.x = forwardX;
+      enemy.y = forwardY;
+      moved = true;
+      // console.log("Patroller moved forward");
+    }
+
+    // 3. If not moved right or forward, turn left (must be a wall ahead).
+    if (!moved) {
+      // No need to check trail here, as we assume we only turn left if forward is blocked by a wall
+      enemy.dx = leftDX;
+      enemy.dy = leftDY;
+      // Don't move this turn, just change direction for the next turn.
+      // This prevents cutting corners incorrectly.
+      // console.log("Patroller turned left");
+    }
+  }
+
+  function winGame() {
+    console.log('YOU WIN!');
+    alert(`You Win! Captured ${capturedPercentage.toFixed(0)}%`);
+    // TODO: Stop game loop or advance level
+    lives = 0; // Temp way to stop updates
+  }
+
   function update() {
-    if (player.dx === 0 && player.dy === 0) return; // No movement input
+    if (lives <= 0) return; // Don't update if game over
+
+    updateEnemies(); // Update enemies first
+
+    if (player.dx === 0 && player.dy === 0) return; // No player movement input
 
     const currentX = player.x;
     const currentY = player.y;
@@ -300,22 +582,19 @@ document.addEventListener('DOMContentLoaded', () => {
     const willBeInUncaptured = nextCellState === CellState.UNCAPTURED;
     const willHitOwnTrail = nextCellState === CellState.TRAIL;
 
-    // --- Collision Detection (Basic) ---
+    // --- Collision Detection ---
     if (willHitOwnTrail) {
       console.log('Collision with own trail!');
-      // TODO: Handle life loss
-      // resetPlayerPosition();
-      isDrawing = false;
-      // Clear visual trail (need to revert grid state too)
-      currentTrail.forEach((p) => {
-        if (grid[p.y]?.[p.x] === CellState.TRAIL) grid[p.y][p.x] = CellState.UNCAPTURED;
-      });
-      currentTrail = [];
-      player.dx = 0; // Stop movement
-      player.dy = 0;
-      return;
+      loseLife(); // Use the new function
+      return; // Stop player movement processing
     }
-    // TODO: Add enemy collision check later
+
+    // Player vs Enemy Collision
+    if (enemies.some((enemy) => enemy.x === nextX && enemy.y === nextY)) {
+      console.log('Player collided with enemy!');
+      loseLife();
+      return; // Stop player movement processing
+    }
 
     // --- Trail Logic ---
     if (wasInSafeArea && willBeInUncaptured) {
@@ -379,7 +658,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function drawEnemies() {
-    // TODO: Draw enemies
+    ctx.fillStyle = '#FF0000'; // Enemy color (red)
+    enemies.forEach((enemy) => {
+      ctx.fillRect(enemy.x * CELL_SIZE, enemy.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    });
   }
 
   function draw() {
@@ -412,6 +694,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Initialization ---
   document.addEventListener('keydown', handleInput);
   initializeGrid();
+  initializeEnemies(PATROLLER_COUNT, BOUNCER_COUNT); // Use constants
   updateUI(); // Initial UI update
   requestAnimationFrame(gameLoop); // Start the loop
 
