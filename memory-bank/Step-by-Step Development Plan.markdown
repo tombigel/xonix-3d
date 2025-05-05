@@ -24,19 +24,56 @@ This plan outlines the development approach for a 10-level Xonix game that evolv
 - **Output**: Project skeleton with rendering pipeline and basic state management
 - **Notes**: Ensure the canvas correctly handles responsive sizing for various screens
 
-### Step 2: Classic Xonix 2D Gameplay (Levels 1-2)
+### Step 1.5: Classic Xonix 2D JavaScript Implementation
 
 - **Tasks**:
-  - Implement a 2D rectangular grid system in `GridMath.ts`
-  - Create the player "cutter" with movement controls in `Player.tsx`
-  - Implement trail-drawing and area-capture algorithm (flood fill or similar)
-  - Add two types of enemies (bouncers and patrollers) in `Environment.tsx`
-  - Set up collision detection in `PhysicsSystem.ts`
-  - Create HUD displaying lives, score, and capture percentage
-  - Apply CGA pixel shader for retro aesthetic
-  - Implement game state logic (level start/end, life loss, score calculation)
-- **Output**: Functioning 2D Xonix gameplay with classic mechanics
-- **Notes**: Closely follow the original mechanics with four-directional movement, accurate collision detection, and area filling
+  - Create basic HTML/CSS/JS file structure in `src/classic-2d/`
+  - Implement Canvas setup and rendering loop using `requestAnimationFrame`
+  - Build grid representation with cell states (Uncaptured, Captured, Trail)
+  - Create player movement with 4-directional controls
+  - Implement trail drawing and area capture logic with flood fill
+  - Add enemy types (bouncers and patrollers) with distinct behaviors
+  - Develop collision detection system for player, enemies, and trails
+  - Add lives and scoring system with visual display
+- **Output**: Standalone classic Xonix implementation using vanilla JavaScript
+- **Notes**: This serves as a foundation for the game logic to be used in the 3D version
+
+### Step 2: 3D Visualization of Classic Gameplay
+
+- **Tasks**:
+  - **Game Logic Bridge**:
+    - Create adapter to connect classic-2d game logic to Three.js renderer
+    - Implement state synchronization between game logic and 3D representation
+    - Extract reusable constants and types to shared modules
+  - **3D Scene Setup**:
+    - Set up Three.js scene with appropriate camera and lighting in `Scene3D.tsx`
+    - Create flat 3D grid plane with z-height variations for cell states
+    - Implement materials and shaders for different cell states
+  - **3D Asset Creation**:
+    - Design 3D player model with animations for movement
+    - Create 3D enemy models for bouncers and patrollers
+    - Implement trail effects with glow/particle systems
+    - Add visual effects for captured areas (textures, lighting)
+  - **Camera & Controls**:
+    - Build dynamic camera system with multiple perspective options
+    - Create orbital controls for observing gameplay
+    - Implement top-down camera option for classic-style view
+    - Add smooth transitions between camera perspectives
+  - **UI Integration**:
+    - Design 3D-appropriate HUD with score and lives display
+    - Create percentage completion indicator
+    - Add game state visualization (level, pause, game over)
+    - Implement 3D menu screens and transitions
+  - **Performance & Effects**:
+    - Optimize grid cell rendering with instancing
+    - Add post-processing effects (bloom for trails, etc.)
+    - Ensure mobile compatibility with performance optimization
+    - Implement ambient visual elements (particles, backgrounds)
+  - **Build System**:
+    - Set up scripts to support both classic-2d and 3D versions
+    - Create shared asset loading pipeline
+- **Output**: 3D visualization of classic Xonix gameplay that leverages the existing game logic
+- **Notes**: Focus on visual presentation while maintaining the core gameplay mechanics already established
 
 ### Step 3: Transition Mechanics (Level 3)
 
