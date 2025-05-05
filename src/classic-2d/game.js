@@ -29,17 +29,23 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Game State (placeholders) ---
   let score = 0;
   let lives = 3;
+  let level = 1; // Start at level 1
   let capturedPercentage = 0;
   let player = { ...PLAYER_START_POS, dx: 0, dy: 0 }; // Use constant
   let grid = []; // 2D array for grid state
   let currentTrail = [];
   let isDrawing = false;
   let enemies = [];
-  const ENEMY_COUNT = 3; // 1 Patroller, 2 Bouncers for example
-  const PATROLLER_COUNT = 1;
-  const BOUNCER_COUNT = ENEMY_COUNT - PATROLLER_COUNT;
-  const ENEMY_SPEED = 1; // Grid cells per update cycle
+  let gameOverState = false; // Game over flag
+  let gameRunning = true; // To pause the loop
+  let lastScoreMilestone = 0; // For awarding extra lives
+
+  const BASE_ENEMY_COUNT = 2;
+  const BASE_PATROLLER_COUNT = 1;
+  const ENEMY_SPEED = 1; // Base speed
   const TARGET_PERCENTAGE = 75; // Win condition
+  const LEVEL_BONUS_SCORE = 1000;
+  const EXTRA_LIFE_SCORE_INTERVAL = 10000; // Points needed for an extra life
 
   // --- Cell States Enum (Simple JS version) ---
   const CellState = {
@@ -64,53 +70,86 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Grid initialized');
   }
 
-  function initializeEnemies(patrollerCount, bouncerCount) {
+  function initializeEnemies(currentLevel) {
     enemies = [];
+    // --- Difficulty Scaling ---
+    const totalEnemies = BASE_ENEMY_COUNT + Math.floor(currentLevel / 2);
+    const patrollerCount = BASE_PATROLLER_COUNT + Math.floor(currentLevel / 3);
+    const bouncerCount = Math.max(1, totalEnemies - patrollerCount);
+    // Increase speed slightly per level, ensure it's at least 1
+    const currentEnemySpeed = Math.max(1, ENEMY_SPEED + Math.floor((currentLevel - 1) / 4));
 
-    // Initialize Patrollers on the border
+    console.log(
+      `Level ${currentLevel}: Spawning ${patrollerCount} patrollers, ${bouncerCount} bouncers. Speed: ${currentEnemySpeed}`
+    );
+
+    // Initialize Patrollers
     for (let i = 0; i < patrollerCount; i++) {
-      // Example starting positions and directions
       let startX, startY, startDX, startDY;
-      if (i % 2 === 0) {
-        // Start top-left, going right
-        startX = 1;
-        startY = 0;
-        startDX = ENEMY_SPEED;
-        startDY = 0;
-      } else {
-        // Start bottom-right, going left
-        startX = GRID_COLS - 2;
-        startY = GRID_ROWS - 1;
-        startDX = -ENEMY_SPEED;
-        startDY = 0;
+      // Distribute starting positions more evenly if many patrollers
+      const side = i % 4;
+      switch (side) {
+        case 0: // Top, moving right
+          startX = 1;
+          startY = 0;
+          startDX = currentEnemySpeed;
+          startDY = 0;
+          break;
+        case 1: // Right, moving down
+          startX = GRID_COLS - 1;
+          startY = 1;
+          startDX = 0;
+          startDY = currentEnemySpeed;
+          break;
+        case 2: // Bottom, moving left
+          startX = GRID_COLS - 2;
+          startY = GRID_ROWS - 1;
+          startDX = -currentEnemySpeed;
+          startDY = 0;
+          break;
+        case 3: // Left, moving up
+          startX = 0;
+          startY = GRID_ROWS - 2;
+          startDX = 0;
+          startDY = -currentEnemySpeed;
+          break;
       }
+
       enemies.push({
         type: 'patroller',
         x: startX,
         y: startY,
         dx: startDX,
         dy: startDY,
+        speed: currentEnemySpeed,
       });
     }
 
-    // Initialize Bouncers in the uncaptured area
+    // Initialize Bouncers
     for (let i = 0; i < bouncerCount; i++) {
       let enemyX, enemyY;
+      let attempts = 0;
       do {
         enemyX = Math.floor(Math.random() * (GRID_COLS - 2)) + 1;
         enemyY = Math.floor(Math.random() * (GRID_ROWS - 2)) + 1;
+        attempts++;
+        if (attempts > 100) {
+          // Prevent infinite loop if grid is full
+          console.warn('Could not place bouncer easily, placing randomly.');
+          break;
+        }
       } while (
-        grid[enemyY][enemyX] !== CellState.UNCAPTURED ||
-        enemies.some((e) => e.x === enemyX && e.y === enemyY) || // Avoid other enemies
+        grid[enemyY]?.[enemyX] !== CellState.UNCAPTURED ||
+        enemies.some((e) => e.x === enemyX && e.y === enemyY) ||
         (enemyX === player.x && enemyY === player.y)
-      ); // Avoid player start
+      );
 
       const angle = Math.random() * Math.PI * 2;
-      let dx = Math.round(Math.cos(angle) * ENEMY_SPEED);
-      let dy = Math.round(Math.sin(angle) * ENEMY_SPEED);
+      let dx = Math.round(Math.cos(angle) * currentEnemySpeed);
+      let dy = Math.round(Math.sin(angle) * currentEnemySpeed);
       if (dx === 0 && dy === 0) {
-        // Ensure movement
-        dx = Math.random() > 0.5 ? ENEMY_SPEED : -ENEMY_SPEED;
+        dx = Math.random() > 0.5 ? currentEnemySpeed : -currentEnemySpeed;
+        dy = 0; // Default to horizontal if no movement
       }
 
       enemies.push({
@@ -119,6 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
         y: enemyY,
         dx: dx,
         dy: dy,
+        speed: currentEnemySpeed,
       });
     }
     console.log('Enemies initialized:', enemies);
@@ -158,9 +198,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const scoreEl = document.getElementById('score');
     const livesEl = document.getElementById('lives');
     const capturedEl = document.getElementById('captured');
+    const levelEl = document.getElementById('level'); // Get level element
     if (scoreEl) scoreEl.textContent = score;
     if (livesEl) livesEl.textContent = lives;
     if (capturedEl) capturedEl.textContent = capturedPercentage.toFixed(0);
+    if (levelEl) levelEl.textContent = level; // Update level display
   }
 
   function handleInput(event) {
@@ -360,6 +402,21 @@ document.addEventListener('DOMContentLoaded', () => {
     if (capturedPercentage >= TARGET_PERCENTAGE) {
       winGame();
     }
+
+    // --- Scoring --- Calculate points based on cells captured
+    const POINTS_PER_CELL = 10; // Example score value per captured cell
+    score += actualPointsAdded * POINTS_PER_CELL;
+    console.log(`Score updated: ${score}`);
+
+    // --- Extra Life Check ---
+    if (score >= lastScoreMilestone + EXTRA_LIFE_SCORE_INTERVAL) {
+      lives++;
+      lastScoreMilestone += EXTRA_LIFE_SCORE_INTERVAL;
+      console.log(`Extra Life! Score: ${score}, Lives: ${lives}`);
+      // Optional: Add a visual/audio cue here
+      updateUI(); // Update UI immediately to show new life
+    }
+
     return actualPointsAdded; // Return captured count for scoring maybe?
   }
 
@@ -391,6 +448,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateBouncer(enemy) {
+    // Use enemy's speed, ensure dx/dy represent direction * speed
+    // If dx/dy only store direction (-1, 0, 1), multiply by speed here.
+    // Assuming dx/dy already incorporate speed from initialization for now.
     const nextX = enemy.x + enemy.dx;
     const nextY = enemy.y + enemy.dy;
     let bounced = false;
@@ -440,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Recalculate final position after bounce adjustments
+    // Assuming dx/dy include speed
     const finalNextX = enemy.x + enemy.dx;
     const finalNextY = enemy.y + enemy.dy;
 
@@ -468,31 +529,26 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updatePatroller(enemy) {
-    // Patroller movement: Follow the border of the captured area
-    // Uses a 'wall follower' (left-hand rule or right-hand rule) approach.
-    // Let's use a simplified right-hand rule: Try to turn right, if not possible go straight, if not possible turn left.
-
     const { x, y, dx, dy } = enemy;
-
-    // Calculate potential next cells based on current direction
+    // Assuming dx/dy incorporate speed
     const forwardX = x + dx;
     const forwardY = y + dy;
 
-    // Calculate relative right turn based on current direction (dx, dy)
-    // (0, -1) Up -> Right is (1, 0)
-    // (1, 0) Right -> Right is (0, 1)
-    // (0, 1) Down -> Right is (-1, 0)
-    // (-1, 0) Left -> Right is (0, -1)
-    const rightDX = -dy;
-    const rightDY = dx;
-    const rightX = x + rightDX;
-    const rightY = y + rightDY;
+    // Calculate relative right turn direction
+    // Note: dx/dy might be > 1 if speed > 1. We need normalized direction for turning.
+    const normDX = Math.sign(dx);
+    const normDY = Math.sign(dy);
 
-    // Calculate relative left turn
-    const leftDX = dy;
-    const leftDY = -dx;
-    const leftX = x + leftDX;
-    const leftY = y + leftDY;
+    const rightNormDX = -normDY;
+    const rightNormDY = normDX;
+    const rightX = x + rightNormDX * enemy.speed;
+    const rightY = y + rightNormDY * enemy.speed;
+
+    // Calculate relative left turn direction
+    const leftNormDX = normDY;
+    const leftNormDY = -normDX;
+    const leftX = x + leftNormDX * enemy.speed;
+    const leftY = y + leftNormDY * enemy.speed;
 
     // Helper to check if a cell is safe (captured or border)
     const isSafe = (cx, cy) =>
@@ -519,45 +575,83 @@ document.addEventListener('DOMContentLoaded', () => {
     let moved = false;
 
     // 1. Check cell to the right: If it's NOT safe (uncaptured), turn right and move there.
-    if (!isSafe(rightX, rightY)) {
+    // Need to check the cell *at the turn direction*, not the full distance move
+    const checkRightX = x + rightNormDX;
+    const checkRightY = y + rightNormDY;
+    if (!isSafe(checkRightX, checkRightY)) {
+      // Check trail collision at the *target* position after turning right
       if (checkTrailCollision(rightX, rightY)) return;
-      enemy.dx = rightDX;
-      enemy.dy = rightDY;
+      enemy.dx = rightNormDX * enemy.speed;
+      enemy.dy = rightNormDY * enemy.speed;
       enemy.x = rightX;
       enemy.y = rightY;
       moved = true;
-      // console.log("Patroller turned right");
     }
 
     // 2. If not turned right, check cell forward: If it IS safe, move forward.
-    if (!moved && isSafe(forwardX, forwardY)) {
-      // Already checked for trail collision above
+    // Need to check the cell *immediately* forward
+    const checkForwardX = x + normDX;
+    const checkForwardY = y + normDY;
+    if (!moved && isSafe(checkForwardX, checkForwardY)) {
+      // Check trail at target position
+      if (checkTrailCollision(forwardX, forwardY)) return;
       enemy.x = forwardX;
       enemy.y = forwardY;
       moved = true;
-      // console.log("Patroller moved forward");
     }
 
     // 3. If not moved right or forward, turn left (must be a wall ahead).
     if (!moved) {
-      // No need to check trail here, as we assume we only turn left if forward is blocked by a wall
-      enemy.dx = leftDX;
-      enemy.dy = leftDY;
+      enemy.dx = leftNormDX * enemy.speed;
+      enemy.dy = leftNormDY * enemy.speed;
       // Don't move this turn, just change direction for the next turn.
-      // This prevents cutting corners incorrectly.
-      // console.log("Patroller turned left");
     }
   }
 
   function winGame() {
-    console.log('YOU WIN!');
-    alert(`You Win! Captured ${capturedPercentage.toFixed(0)}%`);
-    // TODO: Stop game loop or advance level
-    lives = 0; // Temp way to stop updates
+    console.log('LEVEL COMPLETE!');
+    score += LEVEL_BONUS_SCORE;
+    level++;
+    console.log(`Advancing to Level ${level}. Score: ${score}`);
+    alert(`Level ${level - 1} Complete! Bonus: ${LEVEL_BONUS_SCORE}\nStarting Level ${level}`);
+    startNextLevel();
+  }
+
+  function startNextLevel() {
+    console.log('Setting up Level', level);
+    capturedPercentage = 0;
+    isDrawing = false;
+    currentTrail = [];
+    initializeGrid(); // Reset grid to initial state
+    resetPlayerPosition();
+    initializeEnemies(level); // Spawn enemies for the new level
+    updateUI();
+    // Ensure game loop continues if it was stopped by win/loss
+    if (!gameRunning) {
+      gameRunning = true;
+      requestAnimationFrame(gameLoop);
+    }
+  }
+
+  function gameOver() {
+    gameOverState = true;
+    gameRunning = false;
+    console.log('GAME OVER - FINAL SCORE:', score);
+    // Display Game Over message on canvas (simple example)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.font = '40px Arial';
+    ctx.fillStyle = 'red';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 20);
+    ctx.font = '20px Arial';
+    ctx.fillStyle = 'white';
+    ctx.fillText(`Final Score: ${score}`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
+    // Maybe add instructions to refresh/restart
   }
 
   function update() {
-    if (lives <= 0) return; // Don't update if game over
+    if (!gameRunning || gameOverState) return; // Stop updates if game over or paused
 
     updateEnemies(); // Update enemies first
 
@@ -615,11 +709,19 @@ document.addEventListener('DOMContentLoaded', () => {
       if (currentTrail.length > 0) {
         // Add final point only if trail exists
         console.log('Trail has points. Attempting capture...'); // Log attempt
-        grid[nextY][nextX] = CellState.TRAIL; // Mark final trail point
-        currentTrail.push({ x: nextX, y: nextY });
-        const pointsCaptured = floodFillAndCapture(currentTrail);
-        console.log(`Capture function returned ${pointsCaptured} points captured.`); // Log result
-        capturedPercentage = calculateCapturedPercentage(); // Update percentage
+        // grid[nextY][nextX] = CellState.TRAIL; // Mark final trail point - handled by floodFillAndCapture cleanup
+        // currentTrail.push({ x: nextX, y: nextY }); // Add final point - Handled by floodFillAndCapture cleanup if needed
+        const pointsCapturedCount = floodFillAndCapture(currentTrail);
+        console.log(`Capture function returned ${pointsCapturedCount} points captured.`); // Log result
+
+        // --- Scoring --- Calculate points based on cells captured
+        const POINTS_PER_CELL = 10; // Example score value per captured cell
+        score += pointsCapturedCount * POINTS_PER_CELL;
+        console.log(`Score updated: ${score}`);
+
+        // Percentage is calculated within floodFillAndCapture now
+        // capturedPercentage = calculateCapturedPercentage(); // Update percentage - done in floodFillAndCapture
+        // updateUI(); // Update UI - done in floodFillAndCapture
       } else {
         console.log('Trail was empty, no capture needed.');
       }
@@ -676,15 +778,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- Game Loop ---
   let lastTime = 0;
-  const gameSpeed = 100; // Slightly faster update loop
+  const gameSpeed = 100; // Update frequency
 
   function gameLoop(timestamp) {
+    if (!gameRunning) return; // Stop loop if paused
+
     const deltaTime = timestamp - lastTime;
 
     if (deltaTime > gameSpeed) {
       update();
-      draw();
-      updateUI();
+      draw(); // Draw even if game over to show message
+      if (!gameOverState) {
+        updateUI(); // Only update UI if not game over
+      }
       lastTime = timestamp;
     }
 
@@ -694,7 +800,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Initialization ---
   document.addEventListener('keydown', handleInput);
   initializeGrid();
-  initializeEnemies(PATROLLER_COUNT, BOUNCER_COUNT); // Use constants
+  initializeEnemies(level); // Initialize enemies for level 1
   updateUI(); // Initial UI update
   requestAnimationFrame(gameLoop); // Start the loop
 
