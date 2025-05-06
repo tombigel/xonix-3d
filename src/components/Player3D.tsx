@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { GameState } from '../utils/ClassicGameTypes';
 import * as THREE from 'three';
 import { useSpring, animated } from '@react-spring/three';
+import { useTheme } from './ThemeContext';
 
 interface Player3DProps {
   gameState: GameState | null;
@@ -13,6 +14,7 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
   const ref = useRef<THREE.Mesh>(null);
   const prevPosition = useRef<[number, number, number]>([0, 0, 0]);
   const prevPlayerCoords = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const { currentTheme } = useTheme();
 
   // Calculate player position based on game state
   const position = useMemo(() => {
@@ -87,6 +89,9 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
     }
   });
 
+  // Check if we're using a custom theme
+  const isStandardTheme = currentTheme.name === 'Standard';
+
   return (
     <animated.mesh
       ref={ref}
@@ -94,20 +99,34 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
       castShadow
       receiveShadow
     >
-      {/* Player cube with inset design - enhanced for visibility */}
+      {/* Player cube */}
       <boxGeometry args={[cellSize * 1.0, cellSize * 0.3, cellSize * 1.0]} />
       <meshStandardMaterial
-        color="#FFFFFF"
-        roughness={0.3}
-        emissive="#333333"
-        transparent={true}
-        opacity={0.9}
+        {...(isStandardTheme
+          ? {
+              color: '#FFFFFF',
+              roughness: 0.3,
+              emissive: '#333333',
+              transparent: true,
+              opacity: 0.9,
+            }
+          : {
+              color: currentTheme.playerMaterial.color,
+              emissive: currentTheme.playerMaterial.emissive,
+              roughness: currentTheme.playerMaterial.roughness,
+              metalness: currentTheme.playerMaterial.metalness,
+              envMapIntensity: 3.0,
+            })}
       />
 
-      {/* Add an inner colored element with enhanced brightness */}
+      {/* Add an inner colored element */}
       <mesh position={[0, 0.16, 0]}>
         <boxGeometry args={[cellSize * 0.5, cellSize * 0.1, cellSize * 0.5]} />
-        <meshStandardMaterial color="#00FFFF" emissive="#00FFFF" emissiveIntensity={0.8} />
+        <meshStandardMaterial
+          color={isStandardTheme ? '#00FFFF' : '#FFFF00'}
+          emissive={isStandardTheme ? '#00FFFF' : '#FFAA00'}
+          emissiveIntensity={isStandardTheme ? 0.8 : 1.2}
+        />
       </mesh>
     </animated.mesh>
   );

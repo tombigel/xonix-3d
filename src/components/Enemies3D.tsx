@@ -2,6 +2,7 @@ import { useMemo, useEffect, useRef } from 'react';
 import { GameState, Enemy } from '../utils/ClassicGameTypes';
 import * as THREE from 'three';
 import { useSpring, animated } from '@react-spring/three';
+import { useTheme } from './ThemeContext';
 
 interface Enemies3DProps {
   gameState: GameState | null;
@@ -16,6 +17,10 @@ const Enemy3D: React.FC<{
   cellSize: number;
 }> = ({ enemy, gridCols, gridRows, cellSize }) => {
   const meshRef = useRef<THREE.Mesh>(null);
+  const { currentTheme } = useTheme();
+
+  // Check if we're using standard theme
+  const isStandardTheme = currentTheme.name === 'Standard';
 
   // Center the grid
   const offsetX = (gridCols * cellSize) / 2;
@@ -42,6 +47,13 @@ const Enemy3D: React.FC<{
     }
   }, []);
 
+  // Get outline color based on theme
+  const outlineColor = isStandardTheme
+    ? '#FFFFFF'
+    : currentTheme.name === 'Tron'
+      ? '#FF5555'
+      : currentTheme.enemyMaterial.color;
+
   // Render different visuals based on enemy type
   return enemy.type === 'bouncer' ? (
     // Bouncer - sphere
@@ -52,7 +64,21 @@ const Enemy3D: React.FC<{
       receiveShadow
     >
       <sphereGeometry args={[cellSize * 0.4, 16, 16]} />
-      <meshStandardMaterial color="#FFFFFF" roughness={0.3} metalness={0.5} />
+      <meshStandardMaterial
+        {...(isStandardTheme
+          ? {
+              color: '#FFFFFF',
+              roughness: 0.3,
+              metalness: 0.5,
+            }
+          : {
+              color: currentTheme.enemyMaterial.color,
+              emissive: currentTheme.enemyMaterial.emissive,
+              roughness: currentTheme.enemyMaterial.roughness,
+              metalness: currentTheme.enemyMaterial.metalness,
+              envMapIntensity: 3.0,
+            })}
+      />
     </animated.mesh>
   ) : (
     // Patroller - cube with outline
@@ -63,12 +89,26 @@ const Enemy3D: React.FC<{
       receiveShadow
     >
       <boxGeometry args={[cellSize * 0.7, cellSize * 0.3, cellSize * 0.7]} />
-      <meshStandardMaterial color="#000000" roughness={0.7} metalness={0} />
+      <meshStandardMaterial
+        {...(isStandardTheme
+          ? {
+              color: '#000000',
+              roughness: 0.7,
+              metalness: 0,
+            }
+          : {
+              color: currentTheme.enemyMaterial.color,
+              emissive: currentTheme.enemyMaterial.emissive,
+              roughness: currentTheme.enemyMaterial.roughness,
+              metalness: currentTheme.enemyMaterial.metalness,
+              envMapIntensity: 3.0,
+            })}
+      />
       <lineSegments>
         <edgesGeometry
           args={[new THREE.BoxGeometry(cellSize * 0.75, cellSize * 0.35, cellSize * 0.75)]}
         />
-        <lineBasicMaterial color="#FFFFFF" linewidth={2} />
+        <lineBasicMaterial color={outlineColor} linewidth={2} />
       </lineSegments>
     </animated.mesh>
   );

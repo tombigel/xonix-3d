@@ -9,6 +9,7 @@ import { Trail3D } from './Trail3D';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
+import { ThemeProvider, useTheme } from './ThemeContext';
 
 // Third-person camera component that follows the player
 const ThirdPersonCamera = ({
@@ -107,12 +108,14 @@ interface Scene3DProps {
   debug?: boolean;
 }
 
-export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false }) => {
+// Scene content separated to be wrapped with ThemeProvider
+const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false }) => {
   const { gameState, isInitialized, handleInput, startNextLevel, restartGame, getConstants } =
     useClassicGameLogic(initialLevel);
   const orbitControlsRef = useRef<OrbitControlsImpl>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const thirdPersonCameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const { currentTheme, cycleTheme, themeIndex } = useTheme();
 
   // Camera state
   const [activeCamera, setActiveCamera] = useState<'main' | 'thirdPerson'>('main');
@@ -267,6 +270,10 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           event.preventDefault();
           switchToThirdPersonCamera();
           return;
+        case '3':
+          event.preventDefault();
+          cycleTheme(); // Cycle through available themes
+          return;
         case '+':
         case '=': // Same key as + without shift
           event.preventDefault();
@@ -330,6 +337,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
     switchToThirdPersonCamera,
     adjustThirdPersonDistance,
     activeCamera,
+    cycleTheme, // Add to dependency array
   ]);
 
   if (!isInitialized) {
@@ -385,15 +393,15 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
         )}
 
         {/* Environment and lighting */}
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={currentTheme.lightIntensity.ambient} />
         <directionalLight
           castShadow
           position={[0, calculateCameraHeight() * 0.8, 0]}
-          intensity={1}
+          intensity={currentTheme.lightIntensity.directional}
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
         />
-        <Environment preset="city" />
+        <Environment preset={currentTheme.environmentPreset} />
 
         {/* Game elements */}
         <group position={[0, 0, 0]}>
@@ -422,7 +430,14 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
 
       {/* Game UI overlays */}
       <div
-        style={{ position: 'absolute', top: 10, left: 10, color: 'white', fontFamily: 'monospace' }}
+        style={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          color: currentTheme.uiColors.text,
+          fontFamily: 'monospace',
+          textShadow: currentTheme.uiColors.textShadow || 'none',
+        }}
       >
         <div>Score: {gameState?.score}</div>
         <div>Lives: {gameState?.lives}</div>
@@ -436,6 +451,9 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
         </div>
         <div style={{ opacity: 0.7 }}>
           2: Third-person {activeCamera === 'thirdPerson' ? '(active)' : ''}
+        </div>
+        <div style={{ opacity: 0.7 }}>
+          3: Theme: {currentTheme.name} ({themeIndex + 1}/3)
         </div>
         <div style={{ opacity: 0.7 }}>+/-: Adjust third-person distance</div>
       </div>
@@ -451,14 +469,28 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
             background: 'rgba(0, 0, 0, 0.7)',
             padding: '20px',
             borderRadius: '10px',
-            color: 'white',
+            color: currentTheme.uiColors.text,
             textAlign: 'center',
             fontFamily: 'monospace',
+            border: currentTheme.uiColors.buttonBorder || 'none',
+            boxShadow: currentTheme.uiColors.buttonShadow || 'none',
           }}
         >
           <h2>GAME OVER</h2>
           <p>Score: {gameState.score}</p>
-          <button onClick={restartGame}>Restart (R)</button>
+          <button
+            onClick={restartGame}
+            style={{
+              background: currentTheme.uiColors.buttonBackground || '#333',
+              color: currentTheme.uiColors.buttonText || 'white',
+              border: currentTheme.uiColors.buttonBorder || '1px solid #666',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              boxShadow: currentTheme.uiColors.buttonShadow || 'none',
+            }}
+          >
+            Restart (R)
+          </button>
         </div>
       )}
 
@@ -473,16 +505,39 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
             background: 'rgba(0, 0, 0, 0.7)',
             padding: '20px',
             borderRadius: '10px',
-            color: 'white',
+            color: currentTheme.uiColors.text,
             textAlign: 'center',
             fontFamily: 'monospace',
+            border: currentTheme.uiColors.buttonBorder || 'none',
+            boxShadow: currentTheme.uiColors.buttonShadow || 'none',
           }}
         >
           <h2>LEVEL {gameState.level} COMPLETE!</h2>
           <p>Score: {gameState.score}</p>
-          <button onClick={startNextLevel}>Next Level (Enter)</button>
+          <button
+            onClick={startNextLevel}
+            style={{
+              background: currentTheme.uiColors.buttonBackground || '#333',
+              color: currentTheme.uiColors.buttonText || 'white',
+              border: currentTheme.uiColors.buttonBorder || '1px solid #666',
+              padding: '8px 16px',
+              cursor: 'pointer',
+              boxShadow: currentTheme.uiColors.buttonShadow || 'none',
+            }}
+          >
+            Next Level (Enter)
+          </button>
         </div>
       )}
     </div>
+  );
+};
+
+// Wrap the scene with ThemeProvider
+export const Scene3D: React.FC<Scene3DProps> = (props) => {
+  return (
+    <ThemeProvider>
+      <SceneContent {...props} />
+    </ThemeProvider>
   );
 };

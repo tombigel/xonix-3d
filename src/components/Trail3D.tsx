@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { GameState, CellState } from '../utils/ClassicGameTypes';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useTheme } from './ThemeContext';
 
 interface Trail3DProps {
   gameState: GameState | null;
@@ -10,6 +11,10 @@ interface Trail3DProps {
 
 export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => {
   const { scene } = useThree();
+  const { currentTheme } = useTheme();
+
+  // Check if we're using standard theme
+  const isStandardTheme = currentTheme.name === 'Standard';
 
   // Memoized trail cells based on the game state
   const trailCells = useMemo(() => {
@@ -19,12 +24,12 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
     const { grid, gridCols, gridRows, player } = gameState;
 
     // Cell dimensions and materials
-    const geometry = new THREE.BoxGeometry(cellSize, cellSize * 0.3, cellSize);
-    const material = new THREE.MeshStandardMaterial({
-      color: '#FF00FF',
-      roughness: 0.3,
-      emissive: '#550055',
-    });
+    const geometry = new THREE.BoxGeometry(
+      cellSize,
+      cellSize * (isStandardTheme ? 0.3 : 0.2),
+      cellSize
+    );
+    const material = currentTheme.cellMaterials[CellState.TRAIL];
 
     // Center the grid
     const offsetX = (gridCols * cellSize) / 2;
@@ -45,7 +50,7 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
         const posZ = y * cellSize - offsetZ + cellSize / 2;
 
         // Height for trail cells
-        const posY = cellSize * 0.15; // Slightly raised
+        const posY = cellSize * (isStandardTheme ? 0.15 : 0.1); // Slightly raised
 
         cells.push(
           <mesh
@@ -61,12 +66,11 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
     }
 
     return cells;
-  }, [gameState, cellSize]);
+  }, [gameState, cellSize, currentTheme, isStandardTheme]);
 
-  // Cleanup on component unmount
+  // Cleanup on unmount
   useMemo(() => {
     return () => {
-      // Dispose of geometries and materials when component unmounts
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           if (object.geometry) object.geometry.dispose();
