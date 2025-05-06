@@ -1,9 +1,9 @@
 import { useMemo, useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
 import { GameState } from '../utils/ClassicGameTypes';
 import * as THREE from 'three';
 import { useSpring, animated } from '@react-spring/three';
 import { useTheme } from './ThemeContext';
+import { getWaveParameters, calculateHeight } from '../utils/waveUtils';
 
 interface Player3DProps {
   gameState: GameState | null;
@@ -12,15 +12,36 @@ interface Player3DProps {
 
 export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) => {
   const ref = useRef<THREE.Mesh>(null);
-  const prevPosition = useRef<[number, number, number]>([0, 0, 0]);
   const prevPlayerCoords = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const { currentTheme } = useTheme();
+  const intendedYAngle = useRef(0); // Store the intended Y angle for direction
 
-  // Calculate player position based on game state
-  const position = useMemo(() => {
-    if (!gameState) return [0, 0, 0];
+  const waveParams = useMemo(() => {
+    if (!gameState) return { a: 0, b: 0, c: 0, d: 0 }; // Default to flat if no game state
+    return getWaveParameters(gameState.level);
+  }, [gameState]);
+
+  // Calculate player target position AND rotation including wave height and direction
+  const targetPositionAndRotation = useMemo(() => {
+    if (!gameState)
+      return {
+        position: [0, 0, 0] as [number, number, number],
+        rotation: [0, intendedYAngle.current, 0] as [number, number, number], // Use current intendedYAngle
+      };
 
     const { player, gridCols, gridRows } = gameState;
+    const { a, b, c, d } = waveParams;
+
+    // Update intendedYAngle based on player movement
+    if (player.dx !== 0 || player.dy !== 0) {
+      if (player.dx === 1)
+        intendedYAngle.current = 0; // Right
+      else if (player.dx === -1)
+        intendedYAngle.current = Math.PI; // Left
+      else if (player.dy === 1)
+        intendedYAngle.current = Math.PI / 2; // Down (positive Z)
+      else if (player.dy === -1) intendedYAngle.current = -Math.PI / 2; // Up (negative Z)
+    }
 
     // Center the grid
     const offsetX = (gridCols * cellSize) / 2;
@@ -28,28 +49,49 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
 
     // Position the player (Y is up in Three.js)
     const posX = player.x * cellSize - offsetX + cellSize / 2;
-    const posY = cellSize * 0.5; // Moderate height - visible but not too high
     const posZ = player.y * cellSize - offsetZ + cellSize / 2;
 
-    // Store previous position
-    prevPosition.current = [posX, posY, posZ];
+    // Calculate height based on wave function
+    const waveHeight = calculateHeight(posX, posZ, waveParams);
+    const playerBaseY = cellSize * 0.65; // Adjusted base Y for better visibility on waves
+    const posY = playerBaseY + waveHeight;
 
     // Store player coordinates for direction tracking
     prevPlayerCoords.current = { x: player.x, y: player.y };
 
-    return [posX, posY, posZ] as [number, number, number];
-  }, [gameState, cellSize]);
+    // Calculate rotation based on terrain slope, consistent with Grid3D/Trail3D
+    // rotX is rotation around X-axis (pitch), based on slope in Z direction (params c, d)
+    // rotZ is rotation around Z-axis (roll), based on slope in X direction (params a, b)
+    const rotX = Math.atan(-c * d * Math.cos(d * posZ));
+    const rotZ = Math.atan(-a * b * Math.cos(b * posX));
 
-  // Create spring animation for smooth movement with improved config
-  const { position: springPosition } = useSpring({
-    position,
-    config: {
-      tension: 180, // Higher tension for more responsive movement
-      friction: 16, // Balanced friction for smooth stops
-      precision: 0.001, // Higher precision for smoother transitions
-      mass: 1.2, // Slightly higher mass for more inertia
-    },
-  });
+    return {
+      position: [posX, posY, posZ] as [number, number, number],
+      rotation: [rotX, intendedYAngle.current, rotZ] as [number, number, number],
+    };
+  }, [gameState, cellSize, waveParams]);
+
+  // Create spring animation for smooth movement and rotation
+  const [springProps /*, springApi */] = useSpring(
+    () => ({
+      // Spring will animate from current values to the new 'to' values
+      to: {
+        position: targetPositionAndRotation.position,
+        rotation: targetPositionAndRotation.rotation, // This now includes the target Y-axis rotation
+      },
+      config: {
+        tension: 180, // Higher tension for more responsive movement
+        friction: 16, // Balanced friction for smooth stops
+        precision: 0.001, // Higher precision for smoother transitions
+        mass: 1.2, // Slightly higher mass for more inertia
+      },
+      // Reset spring if player coordinates change instantly (e.g. new level, game reset)
+      reset:
+        prevPlayerCoords.current.x !== gameState?.player.x ||
+        prevPlayerCoords.current.y !== gameState?.player.y,
+    }),
+    [targetPositionAndRotation]
+  );
 
   // Set render order and material properties for visibility
   useEffect(() => {
@@ -69,33 +111,14 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
     }
   }, []);
 
-  // Handle player rotation based on movement direction
-  useFrame(() => {
-    if (!ref.current || !gameState) return;
-
-    const { player } = gameState;
-
-    // Rotate player based on movement direction
-    if (player.dx !== 0 || player.dy !== 0) {
-      // Calculate angle based on direction
-      let angle = 0;
-      if (player.dx === 1) angle = 0;
-      else if (player.dx === -1) angle = Math.PI;
-      else if (player.dy === 1) angle = Math.PI / 2;
-      else if (player.dy === -1) angle = -Math.PI / 2;
-
-      // Apply rotation smoothly with increased interpolation factor for more responsive rotation
-      ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, angle, 0.3);
-    }
-  });
-
   // Check if we're using a custom theme
   const isStandardTheme = currentTheme.name === 'Standard';
 
   return (
     <animated.mesh
       ref={ref}
-      position={springPosition as unknown as [number, number, number]}
+      position={springProps.position as unknown as [number, number, number]}
+      rotation={springProps.rotation as unknown as [number, number, number]} // Drive rotation directly from spring
       castShadow
       receiveShadow
     >

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Stats } from '@react-three/drei';
 import { useClassicGameLogic } from '../hooks/useClassicGameLogic';
@@ -14,6 +14,15 @@ import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
 import { ThemeProvider, useTheme } from './ThemeContext';
+import { getWaveParameters, calculateHeight } from '../utils/waveUtils';
+
+// Define the type for wave parameters inline
+interface WaveParamsType {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+}
 
 // Third-person camera component that follows the player
 const ThirdPersonCamera = ({
@@ -22,12 +31,14 @@ const ThirdPersonCamera = ({
   cellSize,
   distance,
   cameraRef,
+  waveParams,
 }: {
   active: boolean;
   gameState: GameState | null;
   cellSize: number;
   distance: number;
   cameraRef: React.RefObject<THREE.PerspectiveCamera>;
+  waveParams: WaveParamsType;
 }) => {
   // Store previous direction to maintain camera position when not moving
   const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
@@ -54,8 +65,12 @@ const ThirdPersonCamera = ({
     const offsetX = (gridCols * cellSize) / 2;
     const offsetZ = (gridRows * cellSize) / 2;
     const playerX = player.x * cellSize - offsetX + cellSize / 2;
-    const playerY = cellSize * 0.5; // Same height as player
     const playerZ = player.y * cellSize - offsetZ + cellSize / 2;
+
+    // Calculate player's height based on wave
+    const playerWaveHeight = calculateHeight(playerX, playerZ, waveParams);
+    const playerBaseYOffset = cellSize * 0.5; // Camera targets middle of player model
+    const playerY = playerBaseYOffset + playerWaveHeight;
 
     // Update the previous direction if player is moving
     if (player.dx !== 0 || player.dy !== 0) {
@@ -73,8 +88,11 @@ const ThirdPersonCamera = ({
 
     // Calculate look-ahead point (in front of player)
     const lookAheadX = playerX + dx * (distance * 0.3); // Look slightly ahead
-    const lookAheadY = playerY; // Same height as player
     const lookAheadZ = playerZ + dy * (distance * 0.3);
+
+    // Calculate look-ahead point's height based on wave
+    const lookAheadWaveHeight = calculateHeight(lookAheadX, lookAheadZ, waveParams);
+    const lookAheadY = playerBaseYOffset + lookAheadWaveHeight; // Target same relative height
 
     // Target camera position and look-at point
     const targetPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
@@ -398,6 +416,12 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     handleKeyDown,
   ]);
 
+  // Calculate wave parameters for camera and other components if needed at this level
+  const waveParams = useMemo(() => {
+    if (!gameState || !isInitialized) return { a: 0, b: 0, c: 0, d: 0 }; // Default to flat
+    return getWaveParameters(gameState.level);
+  }, [gameState, isInitialized]);
+
   if (!isInitialized) {
     return <div>Loading game...</div>;
   }
@@ -439,6 +463,7 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           cellSize={cellSize}
           distance={thirdPersonDistance}
           cameraRef={thirdPersonCameraRef}
+          waveParams={waveParams}
         />
 
         {/* Debug helpers */}
