@@ -2,11 +2,15 @@ import { useRef, useState, useEffect, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Stats } from '@react-three/drei';
 import { useClassicGameLogic } from '../hooks/useClassicGameLogic';
+import { useGameSounds } from '../hooks/useGameSounds';
+import { useSoundEffects } from '../hooks/useSoundEffects';
+import { useSoundStore } from '../stores/soundStore';
 import { Grid3D } from './Grid3D';
 import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
 import { Trail3D } from './Trail3D';
 import { Minimap } from './Minimap';
+import { SoundControls } from './ui/SoundControls';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
@@ -113,16 +117,24 @@ interface Scene3DProps {
 const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false }) => {
   const { gameState, isInitialized, handleInput, startNextLevel, restartGame, getConstants } =
     useClassicGameLogic(initialLevel);
+
+  // Initialize game sounds with the current game state
+  const { soundsEnabled, musicEnabled } = useGameSounds(gameState);
+
+  // Initialize sound effects triggered by game state changes
+  useSoundEffects(gameState);
+
   const orbitControlsRef = useRef<OrbitControlsImpl>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const thirdPersonCameraRef = useRef<THREE.PerspectiveCamera>(null);
-  const { currentTheme, cycleTheme, themeIndex } = useTheme();
+  const { currentTheme, cycleTheme } = useTheme();
 
   // Camera state
   const [activeCamera, setActiveCamera] = useState<'main' | 'thirdPerson'>('main');
   const [thirdPersonDistance, setThirdPersonDistance] = useState(5);
   const [cellSize, setCellSize] = useState(1);
   const [minimapVisible, setMinimapVisible] = useState(true);
+  const [soundControlsVisible, setSoundControlsVisible] = useState(false);
 
   // Track previous direction for third-person controls
   const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
@@ -251,6 +263,11 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     console.log(`Minimap ${minimapVisible ? 'hidden' : 'visible'}`);
   }, [minimapVisible]);
 
+  // Function to toggle sound controls visibility
+  const toggleSoundControlsVisibility = useCallback(() => {
+    setSoundControlsVisible((prev) => !prev);
+  }, []);
+
   // Set camera to top-down view on init
   useEffect(() => {
     if (cameraRef.current && orbitControlsRef.current) {
@@ -261,9 +278,9 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     }
   }, [cameraRef, orbitControlsRef, isInitialized, resetCameraToTopDown]);
 
-  // Handle keyboard input
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+  // Function to handle key down events
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       // Camera control keys work even when game is not initialized
       switch (event.key) {
         case '0':
@@ -283,9 +300,20 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           cycleTheme(); // Cycle through available themes
           return;
         case 'm':
-        case 'M':
           event.preventDefault();
           toggleMinimapVisibility(); // Toggle minimap visibility
+          return;
+        case 's':
+          event.preventDefault();
+          useSoundStore.getState().toggleSounds(); // Toggle sound effects
+          return;
+        case 'b':
+          event.preventDefault();
+          useSoundStore.getState().toggleMusic(); // Toggle background music
+          return;
+        case 'c':
+          event.preventDefault();
+          toggleSoundControlsVisibility(); // Toggle sound controls visibility
           return;
         case '+':
         case '=': // Same key as + without shift
@@ -332,27 +360,32 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
             break;
         }
       }
-    };
+    },
+    [
+      activeCamera,
+      gameState,
+      isInitialized,
+      resetCameraToTopDown,
+      switchToMainCamera,
+      switchToThirdPersonCamera,
+      cycleTheme,
+      toggleMinimapVisibility,
+      toggleSoundControlsVisibility,
+      adjustThirdPersonDistance,
+      handleThirdPersonInput,
+      handleInput,
+      restartGame,
+      startNextLevel,
+    ]
+  );
 
+  // Handle keyboard input
+  useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [
-    gameState,
-    isInitialized,
-    handleInput,
-    handleThirdPersonInput,
-    startNextLevel,
-    restartGame,
-    resetCameraToTopDown,
-    switchToMainCamera,
-    switchToThirdPersonCamera,
-    adjustThirdPersonDistance,
-    activeCamera,
-    cycleTheme,
-    toggleMinimapVisibility,
-  ]);
+  }, [gameState, isInitialized, handleInput, handleThirdPersonInput, startNextLevel, restartGame, resetCameraToTopDown, switchToMainCamera, switchToThirdPersonCamera, adjustThirdPersonDistance, activeCamera, cycleTheme, toggleMinimapVisibility, toggleSoundControlsVisibility, handleKeyDown]);
 
   if (!isInitialized) {
     return <div>Loading game...</div>;
@@ -445,6 +478,9 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
       {/* Minimap - only visible in third-person mode */}
       <Minimap gameState={gameState} visible={activeCamera === 'thirdPerson' && minimapVisible} />
 
+      {/* Sound controls - only visible when toggled */}
+      {soundControlsVisible && <SoundControls />}
+
       {/* Game UI overlays */}
       <div
         style={{
@@ -463,17 +499,16 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
         <div>Target: {gameState?.targetPercentage}%</div>
         <div style={{ marginTop: '10px', opacity: 0.7 }}>Camera Controls:</div>
         <div style={{ opacity: 0.7 }}>0: Reset to top-down</div>
+        <div style={{ opacity: 0.7 }}>1: Main camera</div>
+        <div style={{ opacity: 0.7 }}>2: Third-person camera</div>
+        <div style={{ opacity: 0.7 }}>3: Cycle theme</div>
+        <div style={{ opacity: 0.7 }}>M: Toggle minimap</div>
         <div style={{ opacity: 0.7 }}>
-          1: Main camera {activeCamera === 'main' ? '(active)' : ''}
+          S: Toggle sound effects {soundsEnabled ? '(On)' : '(Off)'}
         </div>
-        <div style={{ opacity: 0.7 }}>
-          2: Third-person {activeCamera === 'thirdPerson' ? '(active)' : ''}
-        </div>
-        <div style={{ opacity: 0.7 }}>
-          3: Theme: {currentTheme.name} ({themeIndex + 1}/3)
-        </div>
-        <div style={{ opacity: 0.7 }}>M: Minimap {minimapVisible ? 'visible' : 'hidden'}</div>
-        <div style={{ opacity: 0.7 }}>+/-: Adjust third-person distance</div>
+        <div style={{ opacity: 0.7 }}>B: Toggle music {musicEnabled ? '(On)' : '(Off)'}</div>
+        <div style={{ opacity: 0.7 }}>C: Toggle sound controls</div>
+        <div style={{ opacity: 0.7 }}>+/-: Adjust camera distance</div>
       </div>
 
       {/* Game over screen */}
