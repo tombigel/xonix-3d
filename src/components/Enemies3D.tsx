@@ -165,7 +165,7 @@ export const Enemies3D: React.FC<Enemies3DProps> = ({ gameState, cellSize = 1 })
 
     return enemies.map((enemy, index) => (
       <Enemy3D
-        key={`enemy-${index}-${enemy.x}-${enemy.y}`}
+        key={`enemy-${index}`}
         enemy={enemy}
         gridCols={gridCols}
         gridRows={gridRows}
