@@ -5,6 +5,8 @@ import { useClassicGameLogic } from '../hooks/useClassicGameLogic';
 import { Grid3D } from './Grid3D';
 import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import * as THREE from 'three';
 
 interface Scene3DProps {
   initialLevel?: number;
@@ -14,7 +16,8 @@ interface Scene3DProps {
 export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false }) => {
   const { gameState, isInitialized, handleInput, startNextLevel, restartGame, getConstants } =
     useClassicGameLogic(initialLevel);
-  const orbitControlsRef = useRef(null);
+  const orbitControlsRef = useRef<OrbitControlsImpl>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera>(null);
   const [cellSize, setCellSize] = useState(1);
 
   // Calculate appropriate cell size based on grid dimensions
@@ -35,6 +38,22 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
       }
     }
   }, [gameState, getConstants]);
+
+  // Set camera to top-down view on init
+  useEffect(() => {
+    if (cameraRef.current && orbitControlsRef.current) {
+      // Position camera directly above the scene
+      setTimeout(() => {
+        const controls = orbitControlsRef.current;
+        if (controls && typeof controls.setPolarAngle === 'function') {
+          // Set to top-down view (polar angle of 0 is top-down)
+          controls.setPolarAngle(0.01); // Almost 0, but slightly offset to avoid gimbal lock
+          controls.setAzimuthalAngle(0);
+          controls.update();
+        }
+      }, 100);
+    }
+  }, [cameraRef, orbitControlsRef, isInitialized]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -75,10 +94,24 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
     return <div>Loading game...</div>;
   }
 
+  // Calculate camera height based on grid size
+  const calculateCameraHeight = () => {
+    if (!gameState) return 40;
+
+    const maxDimension = Math.max(gameState.gridCols, gameState.gridRows);
+    return maxDimension * cellSize * 1.2; // Adjust multiplier as needed
+  };
+
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas shadows dpr={[1, 2]}>
-        <PerspectiveCamera makeDefault position={[0, 20, 40]} fov={45} />
+        <PerspectiveCamera
+          ref={cameraRef}
+          makeDefault
+          position={[0, calculateCameraHeight(), 0]}
+          fov={45}
+          up={[0, 0, -1]} // Adjust the camera's up vector for proper top-down orientation
+        />
 
         {/* Debug helpers */}
         {debug && (
@@ -93,7 +126,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
         <ambientLight intensity={0.5} />
         <directionalLight
           castShadow
-          position={[10, 20, 15]}
+          position={[0, calculateCameraHeight() * 0.8, 0]}
           intensity={1}
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
@@ -114,9 +147,9 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           enableZoom={true}
           enableRotate={true}
           minDistance={5}
-          maxDistance={100}
-          minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 2.2}
+          maxDistance={calculateCameraHeight() * 2}
+          minPolarAngle={0} // Allow full top-down view (0 radians)
+          maxPolarAngle={Math.PI / 2} // Limit to horizontal view (PI/2 radians)
         />
       </Canvas>
 
