@@ -55,15 +55,15 @@ export const useSoundStore = create<SoundState>((set, get) => ({
     // Initialize sounds
     initSounds: () => {
         const soundFiles: Record<SoundType, string> = {
-            background_music: '/sounds/background_music.mp3',
-            player_move: '/sounds/player_move.mp3',
-            trail_start: '/sounds/trail_start.mp3',
-            enemy_collision: '/sounds/enemy_collision.mp3',
-            capture_complete: '/sounds/capture_complete.mp3',
-            power_up: '/sounds/power_up.mp3',
-            level_complete: '/sounds/level_complete.mp3',
-            game_over: '/sounds/game_over.mp3',
-            menu_select: '/sounds/menu_select.mp3',
+            background_music: 'sounds/background_music.mp3',
+            player_move: 'sounds/player_move.mp3',
+            trail_start: 'sounds/trail_start.mp3',
+            enemy_collision: 'sounds/enemy_collision.mp3',
+            capture_complete: 'sounds/capture_complete.mp3',
+            power_up: 'sounds/power_up.mp3',
+            level_complete: 'sounds/level_complete.mp3',
+            game_over: 'sounds/game_over.mp3',
+            menu_select: 'sounds/menu_select.mp3',
         };
 
         const loadedSounds: Record<SoundType, HTMLAudioElement> = {
@@ -103,11 +103,12 @@ export const useSoundStore = create<SoundState>((set, get) => ({
         set({ sounds: loadedSounds });
 
         // Start background music if enabled
-        if (state.musicEnabled) {
-            loadedSounds.background_music.play().catch((error) => {
-                console.warn('Background music autoplay prevented:', error);
-            });
-        }
+        // Removed auto-play from here; will be handled by user interaction
+        // if (state.musicEnabled) {
+        //     loadedSounds.background_music.play().catch((error) => {
+        //         console.warn('Background music autoplay prevented:', error);
+        //     });
+        // }
     },
 
     // Play a sound

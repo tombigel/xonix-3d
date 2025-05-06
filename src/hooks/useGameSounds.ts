@@ -22,21 +22,39 @@ export const useGameSounds = (gameState: GameState | null) => {
     const prevGameStateRef = useRef<GameState | null>(null);
     const prevIsDrawingRef = useRef<boolean | null>(null);
     const hasInitializedRef = useRef<boolean>(false);
+    const firstInteractionOccurredRef = useRef<boolean>(false);
 
     // Initialize sounds
     useEffect(() => {
         if (!hasInitializedRef.current) {
             initSounds();
             hasInitializedRef.current = true;
-
-            // Force start background music (browsers sometimes block autoplay)
-            setTimeout(() => {
-                if (musicEnabled) {
-                    playSound('background_music');
-                }
-            }, 1000);
         }
-    }, [initSounds, musicEnabled, playSound]);
+    }, [initSounds]);
+
+    // Handle user interaction to play background music once
+    useEffect(() => {
+        const handleFirstInteraction = () => {
+            if (!firstInteractionOccurredRef.current && musicEnabled) {
+                playSound('background_music');
+                firstInteractionOccurredRef.current = true;
+                // Clean up listeners once interaction has occurred and music attempted to play
+                document.removeEventListener('click', handleFirstInteraction);
+                document.removeEventListener('keydown', handleFirstInteraction);
+            }
+        };
+
+        if (hasInitializedRef.current && !firstInteractionOccurredRef.current) {
+            document.addEventListener('click', handleFirstInteraction);
+            document.addEventListener('keydown', handleFirstInteraction);
+        }
+
+        // Cleanup function to remove listeners if component unmounts before interaction
+        return () => {
+            document.removeEventListener('click', handleFirstInteraction);
+            document.removeEventListener('keydown', handleFirstInteraction);
+        };
+    }, [musicEnabled, playSound, hasInitializedRef]);
 
     // Handle game state changes for sound triggers
     useEffect(() => {
