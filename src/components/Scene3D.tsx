@@ -6,6 +6,7 @@ import { Grid3D } from './Grid3D';
 import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
 import { Trail3D } from './Trail3D';
+import { Minimap } from './Minimap';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
@@ -121,6 +122,7 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
   const [activeCamera, setActiveCamera] = useState<'main' | 'thirdPerson'>('main');
   const [thirdPersonDistance, setThirdPersonDistance] = useState(5);
   const [cellSize, setCellSize] = useState(1);
+  const [minimapVisible, setMinimapVisible] = useState(true);
 
   // Track previous direction for third-person controls
   const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
@@ -243,6 +245,12 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     [gameState, handleInput]
   );
 
+  // Function to toggle minimap visibility
+  const toggleMinimapVisibility = useCallback(() => {
+    setMinimapVisible((prev) => !prev);
+    console.log(`Minimap ${minimapVisible ? 'hidden' : 'visible'}`);
+  }, [minimapVisible]);
+
   // Set camera to top-down view on init
   useEffect(() => {
     if (cameraRef.current && orbitControlsRef.current) {
@@ -273,6 +281,11 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
         case '3':
           event.preventDefault();
           cycleTheme(); // Cycle through available themes
+          return;
+        case 'm':
+        case 'M':
+          event.preventDefault();
+          toggleMinimapVisibility(); // Toggle minimap visibility
           return;
         case '+':
         case '=': // Same key as + without shift
@@ -337,7 +350,8 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     switchToThirdPersonCamera,
     adjustThirdPersonDistance,
     activeCamera,
-    cycleTheme, // Add to dependency array
+    cycleTheme,
+    toggleMinimapVisibility,
   ]);
 
   if (!isInitialized) {
@@ -428,6 +442,9 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
         )}
       </Canvas>
 
+      {/* Minimap - only visible in third-person mode */}
+      <Minimap gameState={gameState} visible={activeCamera === 'thirdPerson' && minimapVisible} />
+
       {/* Game UI overlays */}
       <div
         style={{
@@ -455,6 +472,7 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
         <div style={{ opacity: 0.7 }}>
           3: Theme: {currentTheme.name} ({themeIndex + 1}/3)
         </div>
+        <div style={{ opacity: 0.7 }}>M: Minimap {minimapVisible ? 'visible' : 'hidden'}</div>
         <div style={{ opacity: 0.7 }}>+/-: Adjust third-person distance</div>
       </div>
 
