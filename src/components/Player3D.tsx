@@ -12,6 +12,7 @@ interface Player3DProps {
 export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) => {
   const ref = useRef<THREE.Mesh>(null);
   const prevPosition = useRef<[number, number, number]>([0, 0, 0]);
+  const prevPlayerCoords = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // Calculate player position based on game state
   const position = useMemo(() => {
@@ -28,14 +29,24 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
     const posY = cellSize * 0.5; // Moderate height - visible but not too high
     const posZ = player.y * cellSize - offsetZ + cellSize / 2;
 
+    // Store previous position
     prevPosition.current = [posX, posY, posZ];
+
+    // Store player coordinates for direction tracking
+    prevPlayerCoords.current = { x: player.x, y: player.y };
+
     return [posX, posY, posZ] as [number, number, number];
   }, [gameState, cellSize]);
 
-  // Create spring animation for smooth movement
+  // Create spring animation for smooth movement with improved config
   const { position: springPosition } = useSpring({
     position,
-    config: { tension: 120, friction: 14 },
+    config: {
+      tension: 180, // Higher tension for more responsive movement
+      friction: 16, // Balanced friction for smooth stops
+      precision: 0.001, // Higher precision for smoother transitions
+      mass: 1.2, // Slightly higher mass for more inertia
+    },
   });
 
   // Set render order and material properties for visibility
@@ -71,8 +82,8 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
       else if (player.dy === 1) angle = Math.PI / 2;
       else if (player.dy === -1) angle = -Math.PI / 2;
 
-      // Apply rotation smoothly
-      ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, angle, 0.2);
+      // Apply rotation smoothly with increased interpolation factor for more responsive rotation
+      ref.current.rotation.y = THREE.MathUtils.lerp(ref.current.rotation.y, angle, 0.3);
     }
   });
 

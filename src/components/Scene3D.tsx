@@ -26,11 +26,23 @@ const ThirdPersonCamera = ({
   // Store previous direction to maintain camera position when not moving
   const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
 
+  // Store last position for smoother interpolation
+  const lastPosition = useRef<THREE.Vector3>(new THREE.Vector3());
+  const lastTarget = useRef<THREE.Vector3>(new THREE.Vector3());
+
+  // Store last time stamp for smooth movement
+  const lastTime = useRef<number>(0);
+
   // Use frame to update camera position every frame
-  useFrame(() => {
+  useFrame((state) => {
     if (!active || !gameState || !cameraRef.current) return;
 
     const { player, gridCols, gridRows } = gameState;
+
+    // Calculate delta time for smoother interpolation
+    const now = state.clock.getElapsedTime();
+    const deltaTime = Math.min(0.1, now - lastTime.current); // Cap to avoid jumps after pauses
+    lastTime.current = now;
 
     // Calculate player position
     const offsetX = (gridCols * cellSize) / 2;
@@ -58,12 +70,32 @@ const ThirdPersonCamera = ({
     const lookAheadY = playerY; // Same height as player
     const lookAheadZ = playerZ + dy * (distance * 0.3);
 
-    // Update camera position with slight smoothing
-    cameraRef.current.position.lerp(new THREE.Vector3(cameraX, cameraY, cameraZ), 0.1);
+    // Target camera position and look-at point
+    const targetPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
+    const targetLookAt = new THREE.Vector3(lookAheadX, lookAheadY, lookAheadZ);
 
-    // Make camera look at the look-ahead point (instead of directly at player)
-    const target = new THREE.Vector3(lookAheadX, lookAheadY, lookAheadZ);
-    cameraRef.current.lookAt(target);
+    // Initialize last positions if not set
+    if (lastPosition.current.lengthSq() === 0) {
+      lastPosition.current.copy(targetPosition);
+    }
+    if (lastTarget.current.lengthSq() === 0) {
+      lastTarget.current.copy(targetLookAt);
+    }
+
+    // Calculate movement speed based on player movement
+    const isMoving = player.dx !== 0 || player.dy !== 0;
+    const smoothFactor = isMoving ? 5.0 : 3.0; // Higher value = faster response
+
+    // Calculate smooth lerp factor based on delta time
+    const lerpFactor = 1.0 - Math.exp(-smoothFactor * deltaTime);
+
+    // Update camera position with proper smoothing (time-based)
+    lastPosition.current.lerp(targetPosition, lerpFactor);
+    lastTarget.current.lerp(targetLookAt, lerpFactor);
+
+    // Apply the smoothed positions
+    cameraRef.current.position.copy(lastPosition.current);
+    cameraRef.current.lookAt(lastTarget.current);
   });
 
   return null;
