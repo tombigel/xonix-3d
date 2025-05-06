@@ -10,7 +10,6 @@ import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
 import { Trail3D } from './Trail3D';
 import { Minimap } from './Minimap';
-import { SoundControls } from './ui/SoundControls';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
@@ -134,7 +133,6 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
   const [thirdPersonDistance, setThirdPersonDistance] = useState(5);
   const [cellSize, setCellSize] = useState(1);
   const [minimapVisible, setMinimapVisible] = useState(true);
-  const [soundControlsVisible, setSoundControlsVisible] = useState(false);
 
   // Track previous direction for third-person controls
   const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
@@ -263,11 +261,6 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     console.log(`Minimap ${minimapVisible ? 'hidden' : 'visible'}`);
   }, [minimapVisible]);
 
-  // Function to toggle sound controls visibility
-  const toggleSoundControlsVisibility = useCallback(() => {
-    setSoundControlsVisible((prev) => !prev);
-  }, []);
-
   // Set camera to top-down view on init
   useEffect(() => {
     if (cameraRef.current && orbitControlsRef.current) {
@@ -311,19 +304,23 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           event.preventDefault();
           useSoundStore.getState().toggleMusic(); // Toggle background music
           return;
-        case 'c':
+        case '[': // Zoom in (decrease distance)
           event.preventDefault();
-          toggleSoundControlsVisibility(); // Toggle sound controls visibility
+          adjustThirdPersonDistance(-1);
           return;
-        case '+':
-        case '=': // Same key as + without shift
+        case ']': // Zoom out (increase distance)
           event.preventDefault();
-          adjustThirdPersonDistance(-1); // Decrease distance (zoom in)
+          adjustThirdPersonDistance(1);
           return;
         case '-':
-        case '_': // Same key as - without shift
+        case '_': // For keyboards where _ is on the same key as -
           event.preventDefault();
-          adjustThirdPersonDistance(1); // Increase distance (zoom out)
+          useSoundStore.getState().decreaseOverallVolume();
+          return;
+        case '=': // For keyboards where + is on the same key as =
+        case '+':
+          event.preventDefault();
+          useSoundStore.getState().increaseOverallVolume();
           return;
       }
 
@@ -370,7 +367,6 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
       switchToThirdPersonCamera,
       cycleTheme,
       toggleMinimapVisibility,
-      toggleSoundControlsVisibility,
       adjustThirdPersonDistance,
       handleThirdPersonInput,
       handleInput,
@@ -385,7 +381,22 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameState, isInitialized, handleInput, handleThirdPersonInput, startNextLevel, restartGame, resetCameraToTopDown, switchToMainCamera, switchToThirdPersonCamera, adjustThirdPersonDistance, activeCamera, cycleTheme, toggleMinimapVisibility, toggleSoundControlsVisibility, handleKeyDown]);
+  }, [
+    gameState,
+    isInitialized,
+    handleInput,
+    handleThirdPersonInput,
+    startNextLevel,
+    restartGame,
+    resetCameraToTopDown,
+    switchToMainCamera,
+    switchToThirdPersonCamera,
+    adjustThirdPersonDistance,
+    activeCamera,
+    cycleTheme,
+    toggleMinimapVisibility,
+    handleKeyDown,
+  ]);
 
   if (!isInitialized) {
     return <div>Loading game...</div>;
@@ -474,13 +485,8 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           />
         )}
       </Canvas>
-
       {/* Minimap - only visible in third-person mode */}
       <Minimap gameState={gameState} visible={activeCamera === 'thirdPerson' && minimapVisible} />
-
-      {/* Sound controls - only visible when toggled */}
-      {soundControlsVisible && <SoundControls />}
-
       {/* Game UI overlays */}
       <div
         style={{
@@ -507,10 +513,9 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           S: Toggle sound effects {soundsEnabled ? '(On)' : '(Off)'}
         </div>
         <div style={{ opacity: 0.7 }}>B: Toggle music {musicEnabled ? '(On)' : '(Off)'}</div>
-        <div style={{ opacity: 0.7 }}>C: Toggle sound controls</div>
-        <div style={{ opacity: 0.7 }}>+/-: Adjust camera distance</div>
+        <div style={{ opacity: 0.7 }}>[ / ]: Adjust camera distance</div>
+        <div style={{ opacity: 0.7 }}>- / +: Adjust overall volume</div>
       </div>
-
       {/* Game over screen */}
       {gameState?.gameOver && (
         <div
@@ -546,7 +551,6 @@ const SceneContent: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = false 
           </button>
         </div>
       )}
-
       {/* Level complete screen */}
       {gameState?.levelComplete && (
         <div

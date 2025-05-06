@@ -29,6 +29,8 @@ interface SoundState {
     toggleMusic: () => void;
     setSoundVolume: (volume: number) => void;
     setMusicVolume: (volume: number) => void;
+    increaseOverallVolume: () => void;
+    decreaseOverallVolume: () => void;
 }
 
 // Create the sound store
@@ -48,7 +50,7 @@ export const useSoundStore = create<SoundState>((set, get) => ({
     soundsEnabled: true,
     musicEnabled: true,
     soundVolume: 1.0,
-    musicVolume: 0.33, // Music at 1/3 volume of sound effects
+    musicVolume: 0.165, // Music at 1/6 volume of sound effects
 
     // Initialize sounds
     initSounds: () => {
@@ -227,5 +229,23 @@ export const useSoundStore = create<SoundState>((set, get) => ({
         }
 
         set({ musicVolume: clampedVolume });
+    },
+
+    // Increase overall volume
+    increaseOverallVolume: () => {
+        const { soundVolume, musicVolume, setSoundVolume, setMusicVolume } = get();
+        const newSoundVolume = Math.min(1, soundVolume + 0.1);
+        const newMusicVolume = Math.min(1, musicVolume + 0.1);
+        setSoundVolume(newSoundVolume);
+        setMusicVolume(newMusicVolume);
+    },
+
+    // Decrease overall volume
+    decreaseOverallVolume: () => {
+        const { soundVolume, musicVolume, setSoundVolume, setMusicVolume } = get();
+        const newSoundVolume = Math.max(0, soundVolume - 0.1);
+        const newMusicVolume = Math.max(0, musicVolume - 0.1);
+        setSoundVolume(newSoundVolume);
+        setMusicVolume(newMusicVolume);
     },
 })); 

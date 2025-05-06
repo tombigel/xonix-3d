@@ -2,12 +2,85 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Setting up Three.js Game Boilerplate</title>
+    <title>Vibe Coded Xonix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'VT323', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #333;
+            color: white;
+            text-align: center;
+        }
+    
+        .content-wrapper {
+            padding: 20px;
+        }
+    
+        .container {
+            min-width: 300px;
+            padding: 20px;
+        }
+    
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            color: #00aaaa;
+            font-size: 4.5em;
+            text-shadow: 3px 3px #000000;
+            margin-bottom: 40px;
+            line-height: 1.2;
+        }
+    
+        nav a {
+            display: block;
+            margin: 20px 0;
+            padding: 10px;
+            font-family: 'VT323', monospace;
+            font-size: 3.5em;
+            color: white;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+    
+        nav a:hover,
+        nav a:focus {
+            color: #00cccc;
+        }
+    
+        footer {
+            margin-top: 50px;
+            font-family: 'VT323', monospace;
+            font-size: 1.8em;
+            color: #bbbbbb;
+            line-height: 1.4;
+        }
+    
+        footer p {
+            margin: 8px 0;
+        }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="content-wrapper">
+        <div class="container">
+            <h1>Vibe Coded Xonix</h1>
+            <nav>
+                <a href="./app3d.html">Play 3D Xonix</a>
+                <a href="./app2d.html">Play Classic Xonix</a>
+            </nav>
+        </div>
+        <footer>
+            <p>Authors: Tom Bigelajzen, Ameer Abu-Fraiha</p>
+            <p>Wow! Team | Wix 2025</p>
+        </footer>
+    </div>
   </body>
 </html>
