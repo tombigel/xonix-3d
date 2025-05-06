@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { GameState, CellState } from '../utils/ClassicGameTypes';
+import { useMemo, useRef, useEffect } from 'react';
+import { GameState, CellState, TrailSegment } from '../utils/ClassicGameTypes';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -7,6 +7,121 @@ interface Grid3DProps {
   gameState: GameState | null;
   cellSize?: number;
 }
+
+// Component that renders the player's trail as a continuous path
+const TrailRenderer: React.FC<{
+  gameState: GameState;
+  cellSize: number;
+  gridCols: number;
+  gridRows: number;
+}> = ({ gameState, cellSize, gridCols, gridRows }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const lastTrailLength = useRef<number>(0);
+  const material = useRef<THREE.MeshStandardMaterial>(
+    new THREE.MeshStandardMaterial({
+      color: '#FF00FF',
+      roughness: 0.3,
+      emissive: '#550055',
+      transparent: true,
+    })
+  );
+
+  // Center offset for grid
+  const offsetX = (gridCols * cellSize) / 2;
+  const offsetZ = (gridRows * cellSize) / 2;
+
+  // Create a smooth continuous trail when the game state updates
+  useEffect(() => {
+    if (!gameState.isDrawing || !gameState.currentTrail.length) return;
+
+    // If trail length hasn't changed, don't rebuild the geometry
+    if (lastTrailLength.current === gameState.currentTrail.length && meshRef.current) return;
+    lastTrailLength.current = gameState.currentTrail.length;
+
+    // Create a trail geometry
+    const trailGeometry = createTrailGeometry(
+      gameState.currentTrail,
+      cellSize,
+      offsetX,
+      offsetZ,
+      gameState.player
+    );
+
+    // Update the mesh with new geometry
+    if (meshRef.current) {
+      meshRef.current.geometry.dispose();
+      meshRef.current.geometry = trailGeometry;
+    }
+  }, [gameState, cellSize, gridCols, gridRows]);
+
+  // Reset geometry when trail is cleared
+  useEffect(() => {
+    if (!gameState.isDrawing && lastTrailLength.current > 0) {
+      lastTrailLength.current = 0;
+      if (meshRef.current) {
+        meshRef.current.geometry.dispose();
+        meshRef.current.geometry = new THREE.BufferGeometry();
+      }
+    }
+  }, [gameState.isDrawing]);
+
+  // Create trail geometry from trail segments
+  const createTrailGeometry = (
+    trail: TrailSegment[],
+    cellSize: number,
+    offsetX: number,
+    offsetZ: number,
+    player: { x: number; y: number; dx: number; dy: number }
+  ) => {
+    // No trail to render
+    if (trail.length === 0) return new THREE.BufferGeometry();
+
+    // Create a shape for the trail
+    const shape = new THREE.Shape();
+
+    // Start path at the first trail point
+    const startX = trail[0].x * cellSize - offsetX;
+    const startZ = trail[0].y * cellSize - offsetZ;
+    shape.moveTo(startX, startZ);
+
+    // Add each trail segment to the path
+    for (let i = 1; i < trail.length; i++) {
+      const x = trail[i].x * cellSize - offsetX;
+      const z = trail[i].y * cellSize - offsetZ;
+      shape.lineTo(x, z);
+    }
+
+    // Add the current player position to complete the trail
+    const playerX = player.x * cellSize - offsetX;
+    const playerZ = player.y * cellSize - offsetZ;
+    shape.lineTo(playerX, playerZ);
+
+    // Create an extrusion with width equal to cell size
+    const extrudeSettings = {
+      steps: 1,
+      depth: cellSize * 0.3, // Height of trail
+      bevelEnabled: false,
+    };
+
+    // Create geometry from the extruded shape
+    const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+
+    // Rotate to lie flat on XZ plane
+    geometry.rotateX(-Math.PI / 2);
+
+    // Center vertically
+    geometry.translate(0, cellSize * 0.15, 0);
+
+    return geometry;
+  };
+
+  return (
+    <mesh ref={meshRef} material={material.current} receiveShadow castShadow renderOrder={10}>
+      {/* Empty geometry initially, will be replaced in effect */}
+      <bufferGeometry />
+    </mesh>
+  );
+};
 
 export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
   const { scene } = useThree();
@@ -22,7 +137,7 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     const geometries: Record<CellState, THREE.BoxGeometry> = {
       [CellState.UNCAPTURED]: new THREE.BoxGeometry(cellSize, cellSize * 0.1, cellSize),
       [CellState.CAPTURED]: new THREE.BoxGeometry(cellSize, cellSize * 0.5, cellSize),
-      [CellState.TRAIL]: new THREE.BoxGeometry(cellSize, cellSize * 0.3, cellSize),
+      [CellState.TRAIL]: new THREE.BoxGeometry(cellSize, cellSize * 0.01, cellSize), // Make trail cells nearly invisible
     };
 
     const materials: Record<CellState, THREE.Material> = {
@@ -32,6 +147,8 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
         color: '#FF00FF',
         roughness: 0.3,
         emissive: '#550055',
+        transparent: true,
+        opacity: 0, // Make the cells fully transparent - we'll render the trail separately
       }),
     };
 
@@ -43,6 +160,10 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < gridCols; x++) {
         const cellState = grid[y][x];
+
+        // Skip rendering trail cells - we'll render them with TrailRenderer
+        if (cellState === CellState.TRAIL) continue;
+
         const geometry = geometries[cellState];
         const material = materials[cellState];
 
@@ -74,10 +195,9 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
   }, [gameState, cellSize]);
 
   // Cleanup on component unmount
-  useMemo(() => {
+  useEffect(() => {
     return () => {
       // Dispose of geometries and materials when component unmounts
-      // (This would be better with useEffect, but we're showing this pattern for demonstration)
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           if (object.geometry) object.geometry.dispose();
@@ -90,5 +210,17 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     };
   }, [scene]);
 
-  return <group>{gridCells}</group>;
+  return (
+    <group>
+      {gridCells}
+      {gameState && gameState.isDrawing && (
+        <TrailRenderer
+          gameState={gameState}
+          cellSize={cellSize}
+          gridCols={gameState.gridCols}
+          gridRows={gameState.gridRows}
+        />
+      )}
+    </group>
+  );
 };
