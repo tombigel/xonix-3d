@@ -3,60 +3,53 @@ import { GameState, CellState } from '../utils/ClassicGameTypes';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
-interface Grid3DProps {
+interface Trail3DProps {
   gameState: GameState | null;
   cellSize?: number;
 }
 
-export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
+export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => {
   const { scene } = useThree();
 
-  // Memoized grid cells based on the game state
-  const gridCells = useMemo(() => {
+  // Memoized trail cells based on the game state
+  const trailCells = useMemo(() => {
     if (!gameState) return [];
 
     const cells: JSX.Element[] = [];
-    const { grid, gridCols, gridRows } = gameState;
+    const { grid, gridCols, gridRows, player } = gameState;
 
     // Cell dimensions and materials
-    const geometries: Record<Exclude<CellState, CellState.TRAIL>, THREE.BoxGeometry> = {
-      [CellState.UNCAPTURED]: new THREE.BoxGeometry(cellSize, cellSize * 0.1, cellSize),
-      [CellState.CAPTURED]: new THREE.BoxGeometry(cellSize, cellSize * 0.5, cellSize),
-    };
-
-    const materials: Record<Exclude<CellState, CellState.TRAIL>, THREE.Material> = {
-      [CellState.UNCAPTURED]: new THREE.MeshStandardMaterial({ color: '#000000', roughness: 0.7 }),
-      [CellState.CAPTURED]: new THREE.MeshStandardMaterial({ color: '#00AAAA', roughness: 0.5 }),
-    };
+    const geometry = new THREE.BoxGeometry(cellSize, cellSize * 0.3, cellSize);
+    const material = new THREE.MeshStandardMaterial({
+      color: '#FF00FF',
+      roughness: 0.3,
+      emissive: '#550055',
+    });
 
     // Center the grid
     const offsetX = (gridCols * cellSize) / 2;
     const offsetZ = (gridRows * cellSize) / 2;
 
-    // Create cells
+    // Create trail cells
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < gridCols; x++) {
-        const cellState = grid[y][x];
+        // Only render trail cells
+        if (grid[y][x] !== CellState.TRAIL) continue;
 
-        // Skip trail cells - they will be rendered by Trail3D component
-        if (cellState === CellState.TRAIL) continue;
-
-        const geometry = geometries[cellState];
-        const material = materials[cellState];
+        // Skip rendering trail at the player's current position
+        // This ensures there's no visual discrepancy and the path ends at the player
+        if (x === player.x && y === player.y) continue;
 
         // Position the cell
         const posX = x * cellSize - offsetX + cellSize / 2;
         const posZ = y * cellSize - offsetZ + cellSize / 2;
 
-        // Height based on cell state (Y is up in Three.js)
-        const posY = {
-          [CellState.UNCAPTURED]: cellSize * 0.05, // Almost flat
-          [CellState.CAPTURED]: cellSize * 0.25, // Medium height
-        }[cellState];
+        // Height for trail cells
+        const posY = cellSize * 0.15; // Slightly raised
 
         cells.push(
           <mesh
-            key={`cell-${x}-${y}`}
+            key={`trail-${x}-${y}`}
             geometry={geometry}
             material={material}
             position={[posX, posY, posZ]}
@@ -74,7 +67,6 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
   useMemo(() => {
     return () => {
       // Dispose of geometries and materials when component unmounts
-      // (This would be better with useEffect, but we're showing this pattern for demonstration)
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh) {
           if (object.geometry) object.geometry.dispose();
@@ -87,5 +79,5 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     };
   }, [scene]);
 
-  return <group>{gridCells}</group>;
+  return <group>{trailCells}</group>;
 };

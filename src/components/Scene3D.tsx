@@ -5,6 +5,7 @@ import { useClassicGameLogic } from '../hooks/useClassicGameLogic';
 import { Grid3D } from './Grid3D';
 import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
+import { Trail3D } from './Trail3D';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { GameState } from '../utils/ClassicGameTypes';
@@ -397,6 +398,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
         {/* Game elements */}
         <group position={[0, 0, 0]}>
           <Grid3D gameState={gameState} cellSize={cellSize} />
+          <Trail3D gameState={gameState} cellSize={cellSize} />
           <Player3D gameState={gameState} cellSize={cellSize} />
           <Enemies3D gameState={gameState} cellSize={cellSize} />
         </group>
