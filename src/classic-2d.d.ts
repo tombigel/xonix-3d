@@ -5,7 +5,7 @@
 // Tell TypeScript that these JS modules exist and can be imported
 declare module '*/classic-2d/*.js' {
     // The contents will be typed through the interfaces in ClassicGameTypes.ts
-    const content: any;
+    const content: unknown;
     export = content;
 }
 

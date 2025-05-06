@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { GameState } from '../utils/ClassicGameTypes';
 import * as THREE from 'three';
@@ -25,7 +25,7 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
 
     // Position the player (Y is up in Three.js)
     const posX = player.x * cellSize - offsetX + cellSize / 2;
-    const posY = cellSize * 0.3; // Height above the grid
+    const posY = cellSize * 0.5; // Moderate height - visible but not too high
     const posZ = player.y * cellSize - offsetZ + cellSize / 2;
 
     prevPosition.current = [posX, posY, posZ];
@@ -33,10 +33,28 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
   }, [gameState, cellSize]);
 
   // Create spring animation for smooth movement
-  const springs = useSpring({
-    position: position,
+  const { position: springPosition } = useSpring({
+    position,
     config: { tension: 120, friction: 14 },
   });
+
+  // Set render order and material properties for visibility
+  useEffect(() => {
+    if (ref.current) {
+      // Set high renderOrder to ensure the player is visible on top of other elements
+      ref.current.renderOrder = 100;
+
+      ref.current.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material) {
+          if (child.material instanceof THREE.Material) {
+            // Ensure visibility by disabling depth testing
+            child.material.depthTest = false;
+            child.material.needsUpdate = true;
+          }
+        }
+      });
+    }
+  }, []);
 
   // Handle player rotation based on movement direction
   useFrame(() => {
@@ -61,19 +79,24 @@ export const Player3D: React.FC<Player3DProps> = ({ gameState, cellSize = 1 }) =
   return (
     <animated.mesh
       ref={ref}
-      // @ts-expect-error - react-spring types are not fully compatible with r3f
-      position={springs.position}
+      position={springPosition as unknown as [number, number, number]}
       castShadow
       receiveShadow
     >
-      {/* Player cube with inset design */}
-      <boxGeometry args={[cellSize * 0.8, cellSize * 0.2, cellSize * 0.8]} />
-      <meshStandardMaterial color="#FFFFFF" roughness={0.3} />
+      {/* Player cube with inset design - enhanced for visibility */}
+      <boxGeometry args={[cellSize * 1.0, cellSize * 0.3, cellSize * 1.0]} />
+      <meshStandardMaterial
+        color="#FFFFFF"
+        roughness={0.3}
+        emissive="#333333"
+        transparent={true}
+        opacity={0.9}
+      />
 
-      {/* Add an inner colored element */}
-      <mesh position={[0, 0.11, 0]}>
-        <boxGeometry args={[cellSize * 0.4, cellSize * 0.05, cellSize * 0.4]} />
-        <meshStandardMaterial color="#00FFFF" emissive="#007777" />
+      {/* Add an inner colored element with enhanced brightness */}
+      <mesh position={[0, 0.16, 0]}>
+        <boxGeometry args={[cellSize * 0.5, cellSize * 0.1, cellSize * 0.5]} />
+        <meshStandardMaterial color="#00FFFF" emissive="#00FFFF" emissiveIntensity={0.8} />
       </mesh>
     </animated.mesh>
   );

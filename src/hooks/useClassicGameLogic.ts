@@ -23,49 +23,6 @@ export const useClassicGameLogic = (initialLevel = 1, enemyConfig?: EnemyConfig)
     const lastTimeRef = useRef<number>(0);
     const accumulatorRef = useRef<number>(0);
 
-    // Initialize the game logic by dynamically importing the classic modules
-    useEffect(() => {
-        const initializeLogic = async () => {
-            try {
-                // Import the classic game logic modules
-                const gameLogicModule = await import('../classic-2d/gameLogic.js');
-                const constantsModule = await import('../classic-2d/constants.js');
-
-                // Store references to the imported modules
-                gameLogicRef.current = gameLogicModule as unknown as GameLogic;
-                gameConstantsRef.current = constantsModule as unknown as GameConstants;
-
-                // Initialize the game with the provided options
-                const config = enemyConfig || {
-                    baseEnemyCount: gameConstantsRef.current.BASE_ENEMY_COUNT,
-                    basePatrollerCount: gameConstantsRef.current.BASE_PATROLLER_COUNT,
-                    enemySpeed: gameConstantsRef.current.BASE_ENEMY_SPEED,
-                };
-
-                gameLogicRef.current.initGame(initialLevel, config);
-
-                // Get initial state
-                const initialState = gameLogicRef.current.getGameState();
-                setGameState(initialState);
-                setIsInitialized(true);
-
-                // Start the game loop
-                startGameLoop();
-            } catch (error) {
-                console.error('Failed to initialize classic game logic:', error);
-            }
-        };
-
-        initializeLogic();
-
-        // Cleanup function to cancel animation frame on unmount
-        return () => {
-            if (animationFrameRef.current !== null) {
-                cancelAnimationFrame(animationFrameRef.current);
-            }
-        };
-    }, [initialLevel, enemyConfig]);
-
     // Game loop using requestAnimationFrame
     const gameLoop = useCallback((timestamp: number) => {
         if (!gameLogicRef.current) return;
@@ -103,6 +60,53 @@ export const useClassicGameLogic = (initialLevel = 1, enemyConfig?: EnemyConfig)
         accumulatorRef.current = 0;
         animationFrameRef.current = requestAnimationFrame(gameLoop);
     }, [gameLoop]);
+
+    // Initialize the game logic by dynamically importing the classic modules
+    useEffect(() => {
+        const initializeLogic = async () => {
+            try {
+                // Import the classic game logic modules
+                // @ts-expect-error - Import will be correctly typed via declaration file
+                const gameLogicModule = await import('../classic-2d/gameLogic.js');
+                // @ts-expect-error - Import will be correctly typed via declaration file
+                const constantsModule = await import('../classic-2d/constants.js');
+
+                // Store references to the imported modules
+                gameLogicRef.current = gameLogicModule.default || gameLogicModule;
+                gameConstantsRef.current = constantsModule.default || constantsModule;
+
+                // Initialize the game with the provided options
+                if (gameConstantsRef.current && gameLogicRef.current) {
+                    const config = enemyConfig || {
+                        baseEnemyCount: gameConstantsRef.current.BASE_ENEMY_COUNT,
+                        basePatrollerCount: gameConstantsRef.current.BASE_PATROLLER_COUNT,
+                        enemySpeed: gameConstantsRef.current.BASE_ENEMY_SPEED,
+                    };
+
+                    gameLogicRef.current.initGame(initialLevel, config);
+
+                    // Get initial state
+                    const initialState = gameLogicRef.current.getGameState();
+                    setGameState(initialState);
+                    setIsInitialized(true);
+
+                    // Start the game loop
+                    startGameLoop();
+                }
+            } catch (error) {
+                console.error('Failed to initialize classic game logic:', error);
+            }
+        };
+
+        initializeLogic();
+
+        // Cleanup function to cancel animation frame on unmount
+        return () => {
+            if (animationFrameRef.current !== null) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, [initialLevel, enemyConfig, startGameLoop]);
 
     // Function to handle player input
     const handleInput = useCallback((direction: string) => {

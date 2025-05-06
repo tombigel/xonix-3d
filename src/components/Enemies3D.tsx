@@ -36,8 +36,7 @@ const Enemy3D: React.FC<{
   return enemy.type === 'bouncer' ? (
     // Bouncer - sphere
     <animated.mesh
-      // @ts-expect-error - react-spring types are not fully compatible with r3f
-      position={position}
+      position={position as unknown as [number, number, number]}
       castShadow
       receiveShadow
     >
@@ -47,8 +46,7 @@ const Enemy3D: React.FC<{
   ) : (
     // Patroller - cube with outline
     <animated.mesh
-      // @ts-expect-error - react-spring types are not fully compatible with r3f
-      position={position}
+      position={position as unknown as [number, number, number]}
       castShadow
       receiveShadow
     >
