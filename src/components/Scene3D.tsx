@@ -1,5 +1,5 @@
-import { useRef, useState, useEffect } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, Stats } from '@react-three/drei';
 import { useClassicGameLogic } from '../hooks/useClassicGameLogic';
 import { Grid3D } from './Grid3D';
@@ -7,6 +7,67 @@ import { Player3D } from './Player3D';
 import { Enemies3D } from './Enemies3D';
 import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
+import { GameState } from '../utils/ClassicGameTypes';
+
+// Third-person camera component that follows the player
+const ThirdPersonCamera = ({
+  active,
+  gameState,
+  cellSize,
+  distance,
+  cameraRef,
+}: {
+  active: boolean;
+  gameState: GameState | null;
+  cellSize: number;
+  distance: number;
+  cameraRef: React.RefObject<THREE.PerspectiveCamera>;
+}) => {
+  // Store previous direction to maintain camera position when not moving
+  const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
+
+  // Use frame to update camera position every frame
+  useFrame(() => {
+    if (!active || !gameState || !cameraRef.current) return;
+
+    const { player, gridCols, gridRows } = gameState;
+
+    // Calculate player position
+    const offsetX = (gridCols * cellSize) / 2;
+    const offsetZ = (gridRows * cellSize) / 2;
+    const playerX = player.x * cellSize - offsetX + cellSize / 2;
+    const playerY = cellSize * 0.5; // Same height as player
+    const playerZ = player.y * cellSize - offsetZ + cellSize / 2;
+
+    // Update the previous direction if player is moving
+    if (player.dx !== 0 || player.dy !== 0) {
+      prevDirection.current = { dx: player.dx, dy: player.dy };
+    }
+
+    // Use the current or previous direction to position camera
+    const dx = prevDirection.current.dx;
+    const dy = prevDirection.current.dy;
+
+    // Position camera behind player based on movement direction
+    const cameraX = playerX - dx * distance;
+    const cameraY = playerY + distance * 0.4; // Slightly above player
+    const cameraZ = playerZ - dy * distance;
+
+    // Calculate look-ahead point (in front of player)
+    const lookAheadX = playerX + dx * (distance * 0.3); // Look slightly ahead
+    const lookAheadY = playerY; // Same height as player
+    const lookAheadZ = playerZ + dy * (distance * 0.3);
+
+    // Update camera position with slight smoothing
+    cameraRef.current.position.lerp(new THREE.Vector3(cameraX, cameraY, cameraZ), 0.1);
+
+    // Make camera look at the look-ahead point (instead of directly at player)
+    const target = new THREE.Vector3(lookAheadX, lookAheadY, lookAheadZ);
+    cameraRef.current.lookAt(target);
+  });
+
+  return null;
+};
 
 interface Scene3DProps {
   initialLevel?: number;
@@ -18,7 +79,25 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
     useClassicGameLogic(initialLevel);
   const orbitControlsRef = useRef<OrbitControlsImpl>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera>(null);
+  const thirdPersonCameraRef = useRef<THREE.PerspectiveCamera>(null);
+
+  // Camera state
+  const [activeCamera, setActiveCamera] = useState<'main' | 'thirdPerson'>('main');
+  const [thirdPersonDistance, setThirdPersonDistance] = useState(5);
   const [cellSize, setCellSize] = useState(1);
+
+  // Track previous direction for third-person controls
+  const prevDirection = useRef<{ dx: number; dy: number }>({ dx: 0, dy: -1 });
+
+  // Update previous direction when player moves
+  useEffect(() => {
+    if (gameState && (gameState.player.dx !== 0 || gameState.player.dy !== 0)) {
+      prevDirection.current = {
+        dx: gameState.player.dx,
+        dy: gameState.player.dy,
+      };
+    }
+  }, [gameState]);
 
   // Calculate appropriate cell size based on grid dimensions
   useEffect(() => {
@@ -39,48 +118,166 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
     }
   }, [gameState, getConstants]);
 
+  // Function to reset camera to top-down view
+  const resetCameraToTopDown = useCallback(() => {
+    if (orbitControlsRef.current && typeof orbitControlsRef.current.setPolarAngle === 'function') {
+      // Reset to top-down view
+      orbitControlsRef.current.setPolarAngle(0.01); // Almost 0, slightly offset to avoid gimbal lock
+      orbitControlsRef.current.setAzimuthalAngle(0);
+      orbitControlsRef.current.update();
+
+      // Show visual feedback that the view has been reset
+      console.log('Camera view reset to top-down');
+    }
+  }, [orbitControlsRef]);
+
+  // Function to switch to main camera
+  const switchToMainCamera = useCallback(() => {
+    setActiveCamera('main');
+    console.log('Switched to main camera');
+  }, []);
+
+  // Function to switch to third-person camera
+  const switchToThirdPersonCamera = useCallback(() => {
+    setActiveCamera('thirdPerson');
+    console.log('Switched to third-person camera');
+  }, []);
+
+  // Function to adjust third-person camera distance
+  const adjustThirdPersonDistance = useCallback((amount: number) => {
+    setThirdPersonDistance((prev) => {
+      const newDistance = Math.max(2, Math.min(20, prev + amount));
+      console.log(`Third-person camera distance: ${newDistance}`);
+      return newDistance;
+    });
+  }, []);
+
+  // Function to handle third-person controls
+  const handleThirdPersonInput = useCallback(
+    (key: string) => {
+      if (!gameState) return;
+
+      // Get current direction
+      const currentDx = gameState.player.dx;
+      const currentDy = gameState.player.dy;
+
+      // If player is not moving, use the last known direction
+      const dx = currentDx || (gameState.isDrawing ? 0 : prevDirection.current?.dx || 0);
+      const dy = currentDy || (gameState.isDrawing ? 0 : prevDirection.current?.dy || 0);
+
+      let newDirection = { dx: 0, dy: 0 };
+
+      switch (key) {
+        case 'ArrowUp':
+          // Move forward in current direction if not moving, otherwise keep current direction
+          if (currentDx === 0 && currentDy === 0) {
+            newDirection = { dx, dy };
+          } else {
+            newDirection = { dx: currentDx, dy: currentDy };
+          }
+          break;
+        case 'ArrowLeft':
+          // Rotate 90 degrees counterclockwise
+          newDirection = { dx: dy, dy: -dx };
+          break;
+        case 'ArrowRight':
+          // Rotate 90 degrees clockwise
+          newDirection = { dx: -dy, dy: dx };
+          break;
+        case 'ArrowDown':
+          // Reverse direction
+          newDirection = { dx: -dx, dy: -dy };
+          break;
+      }
+
+      // Only update if there's a valid direction
+      if (newDirection.dx !== 0 || newDirection.dy !== 0) {
+        // Convert direction to the corresponding arrow key
+        let inputKey = '';
+        if (newDirection.dx === 1) inputKey = 'ArrowRight';
+        else if (newDirection.dx === -1) inputKey = 'ArrowLeft';
+        else if (newDirection.dy === 1) inputKey = 'ArrowDown';
+        else if (newDirection.dy === -1) inputKey = 'ArrowUp';
+
+        if (inputKey) {
+          handleInput(inputKey);
+        }
+      }
+    },
+    [gameState, handleInput]
+  );
+
   // Set camera to top-down view on init
   useEffect(() => {
     if (cameraRef.current && orbitControlsRef.current) {
       // Position camera directly above the scene
       setTimeout(() => {
-        const controls = orbitControlsRef.current;
-        if (controls && typeof controls.setPolarAngle === 'function') {
-          // Set to top-down view (polar angle of 0 is top-down)
-          controls.setPolarAngle(0.01); // Almost 0, but slightly offset to avoid gimbal lock
-          controls.setAzimuthalAngle(0);
-          controls.update();
-        }
+        resetCameraToTopDown();
       }, 100);
     }
-  }, [cameraRef, orbitControlsRef, isInitialized]);
+  }, [cameraRef, orbitControlsRef, isInitialized, resetCameraToTopDown]);
 
   // Handle keyboard input
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Camera control keys work even when game is not initialized
+      switch (event.key) {
+        case '0':
+          event.preventDefault();
+          resetCameraToTopDown();
+          return;
+        case '1':
+          event.preventDefault();
+          switchToMainCamera();
+          return;
+        case '2':
+          event.preventDefault();
+          switchToThirdPersonCamera();
+          return;
+        case '+':
+        case '=': // Same key as + without shift
+          event.preventDefault();
+          adjustThirdPersonDistance(-1); // Decrease distance (zoom in)
+          return;
+        case '-':
+        case '_': // Same key as - without shift
+          event.preventDefault();
+          adjustThirdPersonDistance(1); // Increase distance (zoom out)
+          return;
+      }
+
       if (!isInitialized || !gameState) return;
 
-      // Game controls
-      switch (event.key) {
-        case 'ArrowUp':
-        case 'ArrowDown':
-        case 'ArrowLeft':
-        case 'ArrowRight':
-          event.preventDefault();
-          handleInput(event.key);
-          break;
-        case 'r':
-        case 'R':
-          if (gameState.gameOver) {
-            restartGame();
-          }
-          break;
-        case ' ':
-        case 'Enter':
-          if (gameState.levelComplete) {
-            startNextLevel();
-          }
-          break;
+      // Process game controls differently based on camera mode
+      if (
+        activeCamera === 'thirdPerson' &&
+        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)
+      ) {
+        event.preventDefault();
+        handleThirdPersonInput(event.key);
+      } else {
+        // Use standard controls for main camera mode
+        switch (event.key) {
+          case 'ArrowUp':
+          case 'ArrowDown':
+          case 'ArrowLeft':
+          case 'ArrowRight':
+            event.preventDefault();
+            handleInput(event.key);
+            break;
+          case 'r':
+          case 'R':
+            if (gameState.gameOver) {
+              restartGame();
+            }
+            break;
+          case ' ':
+          case 'Enter':
+            if (gameState.levelComplete) {
+              startNextLevel();
+            }
+            break;
+        }
       }
     };
 
@@ -88,7 +285,19 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [gameState, isInitialized, handleInput, startNextLevel, restartGame]);
+  }, [
+    gameState,
+    isInitialized,
+    handleInput,
+    handleThirdPersonInput,
+    startNextLevel,
+    restartGame,
+    resetCameraToTopDown,
+    switchToMainCamera,
+    switchToThirdPersonCamera,
+    adjustThirdPersonDistance,
+    activeCamera,
+  ]);
 
   if (!isInitialized) {
     return <div>Loading game...</div>;
@@ -105,12 +314,32 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas shadows dpr={[1, 2]}>
+        {/* Main Camera */}
         <PerspectiveCamera
           ref={cameraRef}
-          makeDefault
+          makeDefault={activeCamera === 'main'}
           position={[0, calculateCameraHeight(), 0]}
           fov={45}
           up={[0, 1, 0]} // Standard up vector for free rotation
+        />
+
+        {/* Third Person Camera */}
+        <PerspectiveCamera
+          ref={thirdPersonCameraRef}
+          makeDefault={activeCamera === 'thirdPerson'}
+          fov={60}
+          near={0.1}
+          far={1000}
+          position={[0, 5, 5]} // Initial position, will be updated by ThirdPersonCamera component
+        />
+
+        {/* Third Person Camera Controller */}
+        <ThirdPersonCamera
+          active={activeCamera === 'thirdPerson'}
+          gameState={gameState}
+          cellSize={cellSize}
+          distance={thirdPersonDistance}
+          cameraRef={thirdPersonCameraRef}
         />
 
         {/* Debug helpers */}
@@ -140,19 +369,21 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           <Enemies3D gameState={gameState} cellSize={cellSize} />
         </group>
 
-        {/* Controls with full rotation freedom */}
-        <OrbitControls
-          ref={orbitControlsRef}
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={5}
-          maxDistance={calculateCameraHeight() * 2}
-          minPolarAngle={0} // Allow top-down view
-          maxPolarAngle={Math.PI} // Allow bottom-up view
-          enableDamping={true}
-          dampingFactor={0.05}
-        />
+        {/* Controls with full rotation freedom - only for main camera */}
+        {activeCamera === 'main' && (
+          <OrbitControls
+            ref={orbitControlsRef}
+            enablePan={true}
+            enableZoom={true}
+            enableRotate={true}
+            minDistance={5}
+            maxDistance={calculateCameraHeight() * 2}
+            minPolarAngle={0} // Allow top-down view
+            maxPolarAngle={Math.PI} // Allow bottom-up view
+            enableDamping={true}
+            dampingFactor={0.05}
+          />
+        )}
       </Canvas>
 
       {/* Game UI overlays */}
@@ -164,6 +395,15 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
         <div>Level: {gameState?.level}</div>
         <div>Captured: {gameState?.capturedPercentage.toFixed(0)}%</div>
         <div>Target: {gameState?.targetPercentage}%</div>
+        <div style={{ marginTop: '10px', opacity: 0.7 }}>Camera Controls:</div>
+        <div style={{ opacity: 0.7 }}>0: Reset to top-down</div>
+        <div style={{ opacity: 0.7 }}>
+          1: Main camera {activeCamera === 'main' ? '(active)' : ''}
+        </div>
+        <div style={{ opacity: 0.7 }}>
+          2: Third-person {activeCamera === 'thirdPerson' ? '(active)' : ''}
+        </div>
+        <div style={{ opacity: 0.7 }}>+/-: Adjust third-person distance</div>
       </div>
 
       {/* Game over screen */}
