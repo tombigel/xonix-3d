@@ -110,7 +110,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           makeDefault
           position={[0, calculateCameraHeight(), 0]}
           fov={45}
-          up={[0, 0, -1]} // Adjust the camera's up vector for proper top-down orientation
+          up={[0, 1, 0]} // Standard up vector for free rotation
         />
 
         {/* Debug helpers */}
@@ -140,7 +140,7 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           <Enemies3D gameState={gameState} cellSize={cellSize} />
         </group>
 
-        {/* Controls */}
+        {/* Controls with full rotation freedom */}
         <OrbitControls
           ref={orbitControlsRef}
           enablePan={true}
@@ -148,8 +148,10 @@ export const Scene3D: React.FC<Scene3DProps> = ({ initialLevel = 1, debug = fals
           enableRotate={true}
           minDistance={5}
           maxDistance={calculateCameraHeight() * 2}
-          minPolarAngle={0} // Allow full top-down view (0 radians)
-          maxPolarAngle={Math.PI / 2} // Limit to horizontal view (PI/2 radians)
+          minPolarAngle={0} // Allow top-down view
+          maxPolarAngle={Math.PI} // Allow bottom-up view
+          enableDamping={true}
+          dampingFactor={0.05}
         />
       </Canvas>
 
