@@ -3,6 +3,7 @@ import { GameState, CellState } from '../utils/ClassicGameTypes';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useTheme } from './ThemeContext';
+import { getWaveParameters, calculateHeight } from '../utils/waveUtils';
 
 interface Trail3DProps {
   gameState: GameState | null;
@@ -16,12 +17,24 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
   // Check if we're using standard theme
   const isStandardTheme = currentTheme.name === 'Standard';
 
+  // Get wave parameters based on current level
+  const waveParams = useMemo(() => {
+    if (!gameState) return { a: 0.4, b: 0.5, c: 0.4, d: 0.5 }; // Default values
+    return getWaveParameters(gameState.level);
+  }, [gameState]);
+
+  // Calculate the height at a given x,z coordinate
+  const calculateWaveHeight = (x: number, z: number) => {
+    return calculateHeight(x, z, waveParams);
+  };
+
   // Memoized trail cells based on the game state
   const trailCells = useMemo(() => {
     if (!gameState) return [];
 
     const cells: JSX.Element[] = [];
     const { grid, gridCols, gridRows, player } = gameState;
+    const { a, b, c, d } = waveParams;
 
     // Cell dimensions and materials
     const geometry = new THREE.BoxGeometry(
@@ -49,8 +62,14 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
         const posX = x * cellSize - offsetX + cellSize / 2;
         const posZ = y * cellSize - offsetZ + cellSize / 2;
 
-        // Height for trail cells
-        const posY = cellSize * (isStandardTheme ? 0.15 : 0.1); // Slightly raised
+        // Apply sinusoidal height function
+        const waveHeight = calculateWaveHeight(posX, posZ);
+
+        // Base height for trail cells
+        const baseHeight = cellSize * (isStandardTheme ? 0.15 : 0.1); // Slightly raised
+
+        // Combined height
+        const posY = baseHeight + waveHeight;
 
         cells.push(
           <mesh
@@ -58,6 +77,12 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
             geometry={geometry}
             material={material}
             position={[posX, posY, posZ]}
+            // Rotate the cell to match the gradient of the sinusoidal surface
+            rotation={[
+              Math.atan(-a * b * Math.cos(b * posX)), // Rotation around Z axis (negative X gradient)
+              0,
+              Math.atan(-c * d * Math.cos(d * posZ)), // Rotation around X axis (negative Z gradient)
+            ]}
             receiveShadow
             castShadow
           />
@@ -66,7 +91,7 @@ export const Trail3D: React.FC<Trail3DProps> = ({ gameState, cellSize = 1 }) => 
     }
 
     return cells;
-  }, [gameState, cellSize, currentTheme, isStandardTheme]);
+  }, [gameState, cellSize, currentTheme, isStandardTheme, waveParams]);
 
   // Cleanup on unmount
   useMemo(() => {
