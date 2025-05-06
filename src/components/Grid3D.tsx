@@ -16,7 +16,7 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     if (!gameState) return [];
 
     const cells: JSX.Element[] = [];
-    const { grid, gridCols, gridRows } = gameState;
+    const { grid, gridCols, gridRows, player } = gameState;
 
     // Cell dimensions and materials
     const geometries: Record<Exclude<CellState, CellState.TRAIL>, THREE.BoxGeometry> = {
@@ -36,10 +36,18 @@ export const Grid3D: React.FC<Grid3DProps> = ({ gameState, cellSize = 1 }) => {
     // Create cells
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < gridCols; x++) {
-        const cellState = grid[y][x];
+        let cellState = grid[y][x];
 
         // Skip trail cells - they will be rendered by Trail3D component
-        if (cellState === CellState.TRAIL) continue;
+        // EXCEPT for the player's position which should have an uncaptured cell
+        if (cellState === CellState.TRAIL) {
+          // If this is the player position, render an UNCAPTURED cell
+          if (x === player.x && y === player.y) {
+            cellState = CellState.UNCAPTURED;
+          } else {
+            continue; // Otherwise skip this trail cell
+          }
+        }
 
         const geometry = geometries[cellState];
         const material = materials[cellState];
