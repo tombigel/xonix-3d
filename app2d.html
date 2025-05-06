@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Classic Xonix 2D</title>
+    <!-- Google Font Import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet" />
+    <!-- Stylesheet -->
+    <style>
+        h1 {
+            font-family: 'Press Start 2P', cursive;
+            color: #00aaaa;
+            /* Teal/cyan, consistent with landing page */
+            font-size: 2.5em;
+            /* Adjust as needed */
+            text-align: center;
+            margin-bottom: 15px;
+            /* Space below title */
+            text-shadow: 2px 2px #000000;
+        }
+    </style>
+  <script type="module" crossorigin src="/xonix-3d/assets/classic-2d-DceSONlO.js"></script>
+  <link rel="modulepreload" crossorigin href="/xonix-3d/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/xonix-3d/assets/constants-CBwMEIId.js">
+  <link rel="modulepreload" crossorigin href="/xonix-3d/assets/gameLogic-BUwW-t6N.js">
+  <link rel="stylesheet" crossorigin href="/xonix-3d/assets/classic-2d-D_I1KSuC.css">
+</head>
+
+<body>
+    <h1>Classic Xonix 2D</h1>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div class="ui">
+            <div>Level: <span id="level">1</span></div>
+            <div>Score: <span id="score">0</span></div>
+            <div>Lives: <span id="lives">3</span></div>
+            <div>Captured: <span id="captured">0</span>% / <span id="target-percentage">75</span>%</div>
+        </div>
+        <!-- Add button for next level -->
+        <button id="nextLevelButton" class="next-level-button" style="display: none">
+            Start Next Level
+        </button>
+    </div>
+    <!-- Load scripts as modules -->
+    <!-- gameLogic.js needs to be loaded first if game.js depends on it immediately -->
+    <!-- Since game.js wraps its logic in DOMContentLoaded, order might not strictly matter,
+         but it's clearer to load logic first. -->
+</body>
+
+</html>
