@@ -6,6 +6,7 @@ import { resolve } from 'path';
 
 // https://vite.dev/config/
 export default defineConfig({
+  base: '/xonix-3d/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
