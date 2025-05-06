@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { GameState, Enemy } from '../utils/ClassicGameTypes';
 import * as THREE from 'three';
 import { useSpring, animated } from '@react-spring/three';
@@ -15,6 +15,8 @@ const Enemy3D: React.FC<{
   gridRows: number;
   cellSize: number;
 }> = ({ enemy, gridCols, gridRows, cellSize }) => {
+  const meshRef = useRef<THREE.Mesh>(null);
+
   // Center the grid
   const offsetX = (gridCols * cellSize) / 2;
   const offsetZ = (gridRows * cellSize) / 2;
@@ -22,7 +24,7 @@ const Enemy3D: React.FC<{
   // Position the enemy (Y is up in Three.js)
   const initialPosition: [number, number, number] = [
     enemy.x * cellSize - offsetX + cellSize / 2,
-    cellSize * (enemy.type === 'bouncer' ? 0.25 : 0.4), // Height above grid
+    cellSize * (enemy.type === 'bouncer' ? 0.25 : 0.5), // Increased patroller height to match player
     enemy.y * cellSize - offsetZ + cellSize / 2,
   ];
 
@@ -32,10 +34,19 @@ const Enemy3D: React.FC<{
     config: { tension: 180, friction: 12 },
   });
 
+  // Set render order to ensure proper collision visibility
+  useEffect(() => {
+    if (meshRef.current) {
+      // Use a high renderOrder to ensure enemies are visible
+      meshRef.current.renderOrder = 90; // Just below player's 100
+    }
+  }, []);
+
   // Render different visuals based on enemy type
   return enemy.type === 'bouncer' ? (
     // Bouncer - sphere
     <animated.mesh
+      ref={meshRef}
       position={position as unknown as [number, number, number]}
       castShadow
       receiveShadow
@@ -46,6 +57,7 @@ const Enemy3D: React.FC<{
   ) : (
     // Patroller - cube with outline
     <animated.mesh
+      ref={meshRef}
       position={position as unknown as [number, number, number]}
       castShadow
       receiveShadow
