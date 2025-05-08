@@ -1,5 +1,7 @@
 # Xonix Vibe Coding Hackathon @ Wix
 
+<https://tombigel.github.io/xonix-3d/>
+
 This repository contains two Xonix-style games (2D and 3D) developed during a short two-day "Vibe Coding" hackathon at Wix by Tom Bigelajzen and Ameer Abu-Fraiha.
 
 The development process was entirely prompt-driven, meaning no code was directly written by the developers. Instead, AI tools were utilized for every step:
